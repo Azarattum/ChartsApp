@@ -9,6 +9,27 @@
     <script src="main.js"></script>
 </head>
 <body>
-    
+    <div class="theme">
+        <input id="theme-checkbox" type="checkbox"><!--checked="checked" //Night theme by default-->
+        <div class="page">
+            <span class="title">Title</span>
+            <canvas id="chart"></canvas>
+            <div class="preview">
+                <canvas id="preview"></canvas>
+                <div class="select">
+                    <div id="left-dragger" class="dragger"></div>
+                    <div id="right-dragger" class="dragger"></div>
+                </div>
+            </div>
+            <div class="graphs">
+                <label class="button"><input type="checkbox" checked="checked"><div class="icon" style="background-color: rgb(118, 214, 114)"></div>Graph 1</label>
+                <label class="button"><input type="checkbox" checked="checked"><div class="icon" style="background-color: rgb(237, 104, 95)"></div>Graph 2</label>
+            </div>
+            <label for="theme-checkbox" class="theme-switch">Switch to 
+                <span class="day">Day</span><span class="night">Night</span>
+                Mode
+            </label>
+        </div>
+    </div>
 </body>
 </html>
