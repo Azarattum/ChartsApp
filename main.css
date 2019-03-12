@@ -124,11 +124,11 @@ html, body, .theme {
     user-select: none;
 }
 
-.button:hover {
+.button:active {
     background-color: rgba(0,0,0,var(--lowlight));
 }
 
-.button:hover > .icon::after {
+.button:active > .icon::after {
     filter: brightness(calc(1 - var(--lowlight)));
 }
 
