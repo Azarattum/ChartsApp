@@ -86,11 +86,11 @@ html, body, .theme {
 }
 
 #left-dragger.dragger {
-    left: -12px;
+    left: -10px;
 }
 
 #right-dragger.dragger {
-    right: -12px;
+    right: -10px;
 }
 
 .graphs {
@@ -159,7 +159,7 @@ html, body, .theme {
     border-radius: calc(var(--button-size) / 32);
     
     font-size: calc(var(--button-size) / 2);
-    color: inherit;
+    color: white;
 
     transition: 0.3s;
     transition-property: transform;
