@@ -3,6 +3,15 @@ var Charts;
 
 loadData("chart_data.json", (source) => {
     Charts = Chart.array(source);
+    ///TESTING!
+    let canvas = document.getElementById("chart");
+    let graphDrawer1 = new GraphDrawer(Charts[0].graphs[0], canvas, {left: 0, bottom: 32});
+    let graphDrawer2 = new GraphDrawer(Charts[0].graphs[1], canvas);
+    //graphDrawer1.bounds.left  = 1548633600000;
+    //graphDrawer1.bounds.right = 1550003200000;
+    
+    graphDrawer1.drawGraph();    
+    graphDrawer2.drawGraph();
 });
 
 //#region Classes
@@ -136,6 +145,77 @@ class Graph {
         this.name = name;
         //#endregion
         console.debug("Graph created", this);
+    }
+}
+
+class GraphDrawer {
+    /**
+     * Creates an object for drawing graphs.
+     * @param {Graph} graph The graph to draw.
+     */
+    constructor (graph, canvas, offsets = {left: 0, bottom: 0}) {
+        //Setup canvas
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+
+        //#region Properties
+        /**The graph to draw.*/
+        this.graph = graph;
+        /**Maximum drawing bounds.*/
+        this.maxBounds = {
+            left: +Object.keys(graph.values)[0],
+            right: +Object.keys(graph.values)[Object.keys(graph.values).length - 1],
+            top: +Math.max.apply(Math, Object.values(graph.values)),
+            bottom: 0//+Math.min.apply(Math, Object.values(graph.values))
+        }
+        /**Current drawing bound.*/
+        this.bounds = Object.assign({}, this.maxBounds);
+        /**Graph offsets (used to create space for the legend)*/
+        this.offsets = offsets;
+        /**Size of viewing area*/
+        this.view = {
+            width: +canvas.width - this.offsets.left,
+            height: +canvas.height - this.offsets.bottom
+        }
+        /**Drawing context.*/
+        this.context = canvas.getContext("2d");
+        //#endregion
+
+        console.debug("GraphDrawer created", this);
+    }
+
+    /**
+     * Draws the graph depending on current settings.
+     */
+    drawGraph() {
+        //Set color
+        this.context.strokeStyle = this.graph.color;
+        this.context.lineWidth = 2.5;
+        let widthRatio = this.view.width / (this.maxBounds.right - this.maxBounds.left);
+        let heightRatio = this.view.height / (this.maxBounds.top - this.maxBounds.bottom);
+        widthRatio *=  (this.maxBounds.right - this.maxBounds.left) / (this.bounds.right - this.bounds.left);
+        //Start drawing
+        this.context.beginPath();
+        let lastPoint = false;
+
+        for (const x in this.graph.values) {
+            if (lastPoint) break;
+            
+            if (x > this.bounds.right)
+                lastPoint = true;
+            
+            const y = this.graph.values[x];
+            if (x < this.bounds.left || y < this.bounds.bottom || y > this.bounds.top)
+                continue;
+
+            let dx = (x - this.bounds.left) * widthRatio + this.offsets.left;
+            let dy = (y - this.bounds.bottom) * heightRatio;
+            
+            this.context.lineTo(dx, this.view.height - dy);
+            console.debug("Draw to", dx, dy);
+        }
+
+        this.context.stroke();
     }
 }
 //#endregion

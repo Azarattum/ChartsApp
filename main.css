@@ -49,7 +49,7 @@ html, body, .theme {
     top: var(--main-margin);
     width: 100%;
     height: 50vh;
-    background-color: rgb(var(--color-content));
+    background-color: rgb(var(--color-content)); /*TEMP!*/
 }
 
 .preview {
@@ -57,7 +57,7 @@ html, body, .theme {
     top: var(--main-margin);
     width: 100%;
     height: var(--preview-size);
-    background-color: rgb(var(--color-content));
+    background-color: rgb(var(--color-content)); /*TEMP!*/
 }
 
 .preview > .select {
