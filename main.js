@@ -2,19 +2,42 @@
 console.debugging = true; ///DEBUG!
 var Charts;
 var Drawer;
+var Preview;
 
 loadData("chart_data.json", (source) => {
     Charts = Chart.array(source);
     let canvas = document.getElementById("chart");
-    Drawer = new ChartDrawer(Charts[4], canvas);
-    
-    Drawer.end = 10;
+    let preview = document.getElementById("preview");
+    let chart = Charts[0];
+    Drawer = new ChartDrawer(chart, canvas);
+    Preview = new ChartDrawer(chart, preview);
     
     render();
+    preview.width = preview.clientWidth;
+    preview.height = preview.clientHeight;
+    Preview.draw();
+
+    //Get elements
+    let selector = document.getElementById("select"),
+        leftDragger = document.getElementById("left-dragger"),
+        rightDragger = document.getElementById("right-dragger"),
+        coverLeft = document.getElementById("cover-left"),
+        coverRight = document.getElementById("cover-right");
+
+    let controller = new ChartController(selector, leftDragger, rightDragger, (start, end) => {
+        coverLeft.style.width = start + "%";
+        coverRight.style.width = (100 - end) + "%";
+        Drawer.start = start;
+        Drawer.end = end;
+        render();
+    });
 
     window.onresize = () => {
+        preview.width = preview.clientWidth;
+        preview.height = preview.clientHeight;
+        Preview.draw();
         render();
-    }
+    };
 
     function render() {
         canvas.width = canvas.clientWidth;
@@ -268,6 +291,10 @@ class GraphDrawer {
     }
 }
 
+class LayoutDrawer {
+
+}
+
 class ChartDrawer {
     /**
      * Creates an object for drawing charts.
@@ -409,6 +436,132 @@ class ChartDrawer {
         for (const drawer of this.graphDrawers) {
             drawer.draw();
         }
+    }
+}
+
+class ChartController {
+    constructor (selector, leftDragger, rightDragger, onupdate)
+    {
+        //#region Properties
+        this.selector = selector;
+        this.borderWidth = parseInt(window.getComputedStyle(selector)["border-left-width"]) * 2;
+        this.minWidth = 
+            parseInt(window.getComputedStyle(selector)["min-width"]) + this.borderWidth;
+
+        this.positionOld = 0;
+        this.positionNew = 0;
+        this.onupdate = onupdate;
+        //#endregion
+        //#region Events Registration
+        leftDragger.onmousedown = (e) => {this.startDrag(e, this, 1)};
+        leftDragger.ontouchstart = (e) => {this.startDrag(e, this, 1)};
+        rightDragger.onmousedown = (e) => {this.startDrag(e, this, 2)};
+        rightDragger.ontouchstart = (e) => {this.startDrag(e, this, 2)};
+        selector.onmousedown = (e) => {this.startDrag(e, this, 0)};
+        selector.ontouchstart = (e) => {this.startDrag(e, this, 0)};
+        //#endregion
+
+        this.update();
+
+        console.debug("ChartController created", this);
+    }
+              
+    startDrag(eventArgs, sender, type) {
+        eventArgs = eventArgs || window.event;
+        if (!eventArgs.clientX && eventArgs.touches) {
+            eventArgs.clientX = eventArgs.touches[0].clientX;
+        }
+        eventArgs.stopPropagation();
+        eventArgs.preventDefault();
+
+        //Save the old postion and register the events
+        sender.positionOld = eventArgs.clientX;
+        document.onmouseup = sender.stopDrag;
+        document.ontouchend = sender.stopDrag;
+        document.onmousemove = (e) => {sender.drag(e, sender, type)};
+        document.ontouchmove = (e) => {sender.drag(e, sender, type)};
+
+        console.debug("Dragging started.");
+    }
+
+    drag(eventArgs, sender, type) {
+        console.debug("Dragging...")
+        eventArgs = eventArgs || window.event;
+        if (!eventArgs.clientX && eventArgs.touches) {
+            eventArgs.clientX = eventArgs.touches[0].clientX;
+        }
+        eventArgs.preventDefault();
+
+        //Calculate the new position
+        sender.positionNew = sender.positionOld - eventArgs.clientX;
+        sender.positionOld = eventArgs.clientX;
+
+        //Set the style
+        if (type === 0) {
+            let left = sender.selector.offsetLeft - sender.positionNew;
+            if (left < 0) left = 0;
+
+            sender.selector.style.left = left + "px";
+        }
+        else if (type === 1) {
+            let width = sender.selector.clientWidth + sender.positionNew;
+            let left = sender.selector.offsetLeft - sender.positionNew;
+
+            if (width < sender.minWidth) {
+                left += width - sender.minWidth;
+                width = sender.minWidth;
+            }
+            if (left < 0) {
+                width -= -left;
+                left = 0;
+            }
+            
+            sender.selector.style.left = left + "px";
+            sender.selector.style.width = width + "px";
+        }
+        else if (type === 2){
+            let width = sender.selector.clientWidth - sender.positionNew;
+            if (width + sender.selector.offsetLeft + sender.borderWidth >
+                sender.selector.parentNode.clientWidth) {
+                    width = sender.selector.clientWidth;
+            }
+
+            sender.selector.style.width = width + "px";
+        }
+
+        sender.normalize();
+        sender.update();
+    }
+
+    stopDrag() {
+        //Clear the events
+        document.onmouseup = null;
+        document.ontouchend = null;
+        document.onmousemove = null;
+        document.ontouchmove = null;
+
+        console.debug("Dragging stopped.");
+    }
+
+    normalize() {
+        if (parseInt(this.selector.style.left) < 0) {
+            this.selector.style.left = "0px";
+        }
+        if ((parseInt(this.selector.style.left) 
+            + this.selector.clientWidth + this.borderWidth) > 
+            this.selector.parentNode.clientWidth) {
+            this.selector.style.left = (this.selector.parentNode.clientWidth -
+                 this.selector.clientWidth - this.borderWidth) + "px";
+        }
+    }
+
+    update() {
+        let size = this.selector.parentNode.clientWidth;
+        let start = this.selector.offsetLeft / (size / 100);
+        let end = (this.selector.offsetLeft + 
+            this.selector.clientWidth + this.borderWidth) / (size / 100);
+
+        this.onupdate(start, end);
     }
 }
 //#endregion

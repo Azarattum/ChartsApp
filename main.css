@@ -49,7 +49,6 @@ html, body, .theme {
     top: var(--main-margin);
     width: 100%;
     height: 50vh;
-    background-color: rgb(var(--color-content)); /*TEMP!*/
 }
 
 .preview {
@@ -57,32 +56,59 @@ html, body, .theme {
     top: var(--main-margin);
     width: 100%;
     height: var(--preview-size);
-    background-color: rgb(var(--color-content)); /*TEMP!*/
+
+    filter: brightness(0.8);
+    touch-action: none;
 }
 
-.preview > .select {
+.preview > .cover {
+    position: absolute;
+    height: 100%;
+
+    background-color: rgba(0,0,0, 0.15);
+}
+
+.preview > #cover-left {
+    left: 0;
+}
+
+.preview > #cover-right {
+    right: 0;
+}
+
+.preview > #select {
     --border: 1px;
     position: absolute;
     top: 0;
     left: 0;
     height: calc(100% - var(--border) * 2);
     min-width: 72px;
-    max-width: 100%;
+    max-width: calc(100% - var(--border) * 8);
 
-    background-color: rgba(var(--color-text), 0.15);
     border: var(--border) solid rgba(var(--color-text), 0.2);
     border-left-width: calc(var(--border) * 4);
     border-right-width: calc(var(--border) * 4);
+
+    cursor: grab;
 }
 
-.preview > .select > .dragger {
+.preview > #select:active {
+    cursor: grabbing;
+}
+
+.preview > #select > .dragger {
     position: absolute;
     
     height: 100%;
     width: 16px;
 
-    /*background-color: blue; /*TEMP!*/
-    /* opacity: 0; */ /*TEMP!*/
+    cursor: ew-resize;
+}
+
+.preview > #preview {
+    position: absolute;
+    width: 100%;
+    height: 100%;
 }
 
 #left-dragger.dragger {
