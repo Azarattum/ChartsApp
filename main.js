@@ -36,6 +36,7 @@ loadData("chart_data.json", (source) => {
         preview.width = preview.clientWidth;
         preview.height = preview.clientHeight;
         Preview.draw();
+        controller.update();
         render();
     };
 
