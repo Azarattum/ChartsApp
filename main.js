@@ -6,7 +6,7 @@ var Drawer;
 loadData("chart_data.json", (source) => {
     Charts = Chart.array(source);
     let canvas = document.getElementById("chart");
-    Drawer = new ChartDrawer(Charts[0], canvas);
+    Drawer = new ChartDrawer(Charts[4], canvas);
     
     Drawer.end = 10;
     
@@ -232,12 +232,27 @@ class GraphDrawer {
         widthRatio *=  (this.maxBounds.right - this.maxBounds.left) / (this.bounds.right - this.bounds.left);
         //Start drawing
         this.context.beginPath();
-        let lastPoint = false;
+        let firstPoint;
 
-        for (const x in this.graph.values) {            
+        for (const x in this.graph.values) {
             const y = this.graph.values[x];
-            if (x < this.bounds.left || y < this.bounds.bottom || y > this.bounds.top)
+
+            if (x < this.bounds.left || y < this.bounds.bottom) {
+                firstPoint = x;
                 continue;
+            }
+
+            if (firstPoint != null)
+            {
+                const y0 = this.graph.values[firstPoint];
+
+                let dx0 = (firstPoint - this.bounds.left) * widthRatio + this.offsets.left;
+                let dy0 = (y0 - this.bounds.bottom) * heightRatio;
+                
+                this.context.moveTo(dx0, this.view.height - dy0);
+
+                firstPoint = null;
+            }
 
             let dx = (x - this.bounds.left) * widthRatio + this.offsets.left;
             let dy = (y - this.bounds.bottom) * heightRatio;
@@ -245,10 +260,8 @@ class GraphDrawer {
             this.context.lineTo(dx, this.view.height - dy);
             //console.debug("Draw to", dx, dy); ///DEBUG!
 
-            if (lastPoint) break;
-            
             if (x > this.bounds.right)
-                lastPoint = true;
+                break;
         }
 
         this.context.stroke();
@@ -307,6 +320,9 @@ class ChartDrawer {
      * @param {Number} percent The percentage of drawing start point.
      */
     set start(percent) {
+        if (percent > 100) percent = 100;
+        if (percent < 0) percent = 0;
+
         let left = this.minLeft + (this.size / 100 * percent);
 
         //Setup left bounds and calculate max points
@@ -322,6 +338,9 @@ class ChartDrawer {
      * @param {Number} percent The percentage of drawing end point.
      */
     set end(percent) {
+        if (percent > 100) percent = 100;
+        if (percent < 0) percent = 0;
+
         let right = this.maxRight - (this.size / 100 * (100 - percent));
 
         //Setup right bounds and calculate max points
