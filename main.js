@@ -1,14 +1,26 @@
+"use strict";
 console.debugging = true; ///DEBUG!
 var Charts;
+var Drawer;
 
 loadData("chart_data.json", (source) => {
     Charts = Chart.array(source);
     let canvas = document.getElementById("chart");
-    let drawer = new ChartDrawer(Charts[0], canvas);
+    Drawer = new ChartDrawer(Charts[0], canvas);
     
-    drawer.start = 0;
-    drawer.end = 100;
-    drawer.draw();
+    Drawer.end = 10;
+    
+    render();
+
+    window.onresize = () => {
+        render();
+    }
+
+    function render() {
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+        Drawer.draw();
+    }
 });
 
 //#region Classes
@@ -151,10 +163,6 @@ class GraphDrawer {
      * @param {Graph} graph The graph to draw.
      */
     constructor (graph, canvas, offsets = {left: 0, bottom: 0}) {
-        //Setup canvas
-        canvas.width = canvas.clientWidth;
-        canvas.height = canvas.clientHeight;
-
         //#region Properties
         /**The graph to draw.*/
         this.graph = graph;
@@ -169,11 +177,10 @@ class GraphDrawer {
         this.bounds = Object.assign({}, this.maxBounds);
         /**Graph offsets (used to create space for the legend)*/
         this.offsets = offsets;
-        /**Size of viewing area*/
-        this.view = {
-            width: +canvas.width - this.offsets.left,
-            height: +canvas.height - this.offsets.bottom
-        }
+        /**Drawing canvas.*/
+        this.canvas = canvas
+        /**Whether the graph is visible or not.*/
+        this.visible = true;
         /**Drawing context.*/
         this.context = canvas.getContext("2d");
         //#endregion
@@ -182,25 +189,52 @@ class GraphDrawer {
     }
 
     /**
+     * Returns size of viewing area.
+     */
+    get view() {
+        return {
+            width: +this.canvas.width - this.offsets.left,
+            height: +this.canvas.height - this.offsets.bottom
+        };
+    }
+
+    /**
+     * Returns the maximum value on the current view.
+     */
+    get localMaximum() {
+        let maximum = -Number.MAX_SAFE_INTEGER;
+
+        for (const x in this.graph.values) {
+            if (x < this.bounds.left)
+                continue;
+            if (x > this.bounds.right)
+                break;
+            
+            const y = this.graph.values[x];
+
+            if (y > maximum)
+                maximum = y;
+        }
+
+        return maximum;
+    }
+
+    /**
      * Draws the graph depending on current settings.
      */
     draw() {
+        if (!this.visible) return;
         //Set color
         this.context.strokeStyle = this.graph.color;
         this.context.lineWidth = 2.5;
         let widthRatio = this.view.width / (this.maxBounds.right - this.maxBounds.left);
-        let heightRatio = this.view.height / (this.maxBounds.top - this.maxBounds.bottom);
+        let heightRatio = this.view.height / (this.bounds.top - this.bounds.bottom);
         widthRatio *=  (this.maxBounds.right - this.maxBounds.left) / (this.bounds.right - this.bounds.left);
         //Start drawing
         this.context.beginPath();
         let lastPoint = false;
 
-        for (const x in this.graph.values) {
-            if (lastPoint) break;
-            
-            if (x > this.bounds.right)
-                lastPoint = true;
-            
+        for (const x in this.graph.values) {            
             const y = this.graph.values[x];
             if (x < this.bounds.left || y < this.bounds.bottom || y > this.bounds.top)
                 continue;
@@ -209,7 +243,12 @@ class GraphDrawer {
             let dy = (y - this.bounds.bottom) * heightRatio;
             
             this.context.lineTo(dx, this.view.height - dy);
-            console.debug("Draw to", dx, dy);
+            //console.debug("Draw to", dx, dy); ///DEBUG!
+
+            if (lastPoint) break;
+            
+            if (x > this.bounds.right)
+                lastPoint = true;
         }
 
         this.context.stroke();
@@ -231,6 +270,10 @@ class ChartDrawer {
         this.minLeft = Number.MAX_SAFE_INTEGER;
         /**The maximum right bound.*/
         this.maxRight = -Number.MAX_SAFE_INTEGER;
+        /**Whether adjust drawing height automaticaly depending on maximum point or not.*/
+        this.autoHeight = true;
+        /**Clear function.*/
+        this.clear = () => {};
         //#endregion
 
         //Initilizing graph drawers
@@ -252,6 +295,10 @@ class ChartDrawer {
         //Calculate the maximum size
         this.size = this.maxRight - this.minLeft;
 
+        this.clear = () => {
+            canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+        };
+
         console.debug("ChartDrawer created", this);
     }
 
@@ -262,9 +309,12 @@ class ChartDrawer {
     set start(percent) {
         let left = this.minLeft + (this.size / 100 * percent);
 
+        //Setup left bounds and calculate max points
         for (const drawer of this.graphDrawers) {
             drawer.bounds.left = left;
         }
+
+        this.updateHeight();
     }
 
     /**
@@ -274,8 +324,54 @@ class ChartDrawer {
     set end(percent) {
         let right = this.maxRight - (this.size / 100 * (100 - percent));
 
+        //Setup right bounds and calculate max points
         for (const drawer of this.graphDrawers) {
             drawer.bounds.right = right;
+        }
+
+        this.updateHeight();
+    }
+
+    /**
+     * Toggles or sets graph's visibility state by id.
+     * @param {Number} id Graph id.
+     * @param {Boolean} state Visibility state.
+     */
+    toggle(id, state = undefined) {
+        if (state == undefined) {
+            this.graphDrawers[id].visible = !this.graphDrawers[id].visible;
+        }
+        else {
+            this.graphDrawers[id].visible = state;
+        }
+
+        this.updateHeight();
+    }
+
+    /**
+     * Updates viewport height.
+     */
+    updateHeight() {
+        let top = -Number.MAX_SAFE_INTEGER;
+
+        //Calculate max points
+        for (const drawer of this.graphDrawers) {
+            if (!drawer.visible) continue;
+
+            if (this.autoHeight) {
+                let maximum = drawer.localMaximum;
+                if (maximum > top)
+                    top = maximum;
+            }
+            else if (drawer.maxBounds.top > top){
+                top = drawer.maxBounds.top;
+            }
+        }
+
+        //Setup top bounds
+        for (const drawer of this.graphDrawers) {
+            if (!drawer.visible) continue;
+            drawer.bounds.top = top;
         }
     }
 
@@ -283,6 +379,7 @@ class ChartDrawer {
      * Draws all charts.
      */
     draw() {
+        this.clear();
         this.drawGraphs();
     }
 
