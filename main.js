@@ -3,15 +3,12 @@ var Charts;
 
 loadData("chart_data.json", (source) => {
     Charts = Chart.array(source);
-    ///TESTING!
     let canvas = document.getElementById("chart");
-    let graphDrawer1 = new GraphDrawer(Charts[0].graphs[0], canvas, {left: 0, bottom: 32});
-    let graphDrawer2 = new GraphDrawer(Charts[0].graphs[1], canvas);
-    //graphDrawer1.bounds.left  = 1548633600000;
-    //graphDrawer1.bounds.right = 1550003200000;
+    let drawer = new ChartDrawer(Charts[0], canvas);
     
-    graphDrawer1.drawGraph();    
-    graphDrawer2.drawGraph();
+    drawer.start = 0;
+    drawer.end = 100;
+    drawer.draw();
 });
 
 //#region Classes
@@ -187,7 +184,7 @@ class GraphDrawer {
     /**
      * Draws the graph depending on current settings.
      */
-    drawGraph() {
+    draw() {
         //Set color
         this.context.strokeStyle = this.graph.color;
         this.context.lineWidth = 2.5;
@@ -216,6 +213,86 @@ class GraphDrawer {
         }
 
         this.context.stroke();
+    }
+}
+
+class ChartDrawer {
+    /**
+     * Creates an object for drawing charts.
+     * @param {Chart} chart The chart to draw.
+     */
+    constructor (chart, canvas, offsets = {left: 0, bottom: 0}) {
+        //#region Properties
+        /**Graph drawer objects.*/
+        this.graphDrawers = [];
+        /**The maximum drawing size.*/
+        this.size = 0;
+        /**The minimal left bound.*/
+        this.minLeft = Number.MAX_SAFE_INTEGER;
+        /**The maximum right bound.*/
+        this.maxRight = -Number.MAX_SAFE_INTEGER;
+        //#endregion
+
+        //Initilizing graph drawers
+        for (const graph of chart.graphs) {
+            let drawer = new GraphDrawer(graph, canvas, offsets);
+
+            //Define the smallest left bound
+            if (drawer.maxBounds.left < this.minLeft) {
+                this.minLeft = drawer.maxBounds.left;
+            }
+            //Define the smallset right bound
+            if (drawer.maxBounds.right > this.maxRight) {
+                this.maxRight = drawer.maxBounds.right;
+            }
+            //Save a drawer
+            this.graphDrawers.push(drawer);
+        }
+
+        //Calculate the maximum size
+        this.size = this.maxRight - this.minLeft;
+
+        console.debug("ChartDrawer created", this);
+    }
+
+    /**
+     * Sets the start drawing point.
+     * @param {Number} percent The percentage of drawing start point.
+     */
+    set start(percent) {
+        let left = this.minLeft + (this.size / 100 * percent);
+
+        for (const drawer of this.graphDrawers) {
+            drawer.bounds.left = left;
+        }
+    }
+
+    /**
+     * Sets the end drawing point.
+     * @param {Number} percent The percentage of drawing end point.
+     */
+    set end(percent) {
+        let right = this.maxRight - (this.size / 100 * (100 - percent));
+
+        for (const drawer of this.graphDrawers) {
+            drawer.bounds.right = right;
+        }
+    }
+
+    /**
+     * Draws all charts.
+     */
+    draw() {
+        this.drawGraphs();
+    }
+
+    /**
+     * Draws the graphs of the chart.
+     */
+    drawGraphs() {
+        for (const drawer of this.graphDrawers) {
+            drawer.draw();
+        }
     }
 }
 //#endregion
