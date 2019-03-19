@@ -9,6 +9,7 @@ loadData("chart_data.json", (source) => {
     let chartId = 0;
 
     loadChart(chartId);
+    moibleStyle();
 
     //Get elements
     let selector = document.getElementById("select"),
@@ -33,6 +34,8 @@ loadData("chart_data.json", (source) => {
     };
 
     window.onresize = () => {
+        selector.style.left = "0px";
+        selector.style.width = "0px";
         previewCanvas.width = previewCanvas.clientWidth * 2;
         previewCanvas.height = previewCanvas.clientHeight * 2;
         preview.draw();
@@ -41,7 +44,8 @@ loadData("chart_data.json", (source) => {
     };
 
     document.getElementsByClassName("theme-switch")[0].onclick = () => {
-        setTimeout(render, 10);
+        setTimeout(render, 1);
+        setTimeout(moibleStyle, 2);
     };
 
     function render() {
@@ -93,6 +97,16 @@ loadData("chart_data.json", (source) => {
         previewCanvas.width = previewCanvas.clientWidth * 2;
         previewCanvas.height = previewCanvas.clientHeight * 2;
         preview.draw();
+    }
+
+    function moibleStyle() {
+        document.body.style.backgroundColor = 
+                window.getComputedStyle(document.getElementsByClassName("page")[0])["background-color"];
+        ///CODE BELLOW DOES NOT WORK!
+        if (document.getElementById("theme-checkbox").checked)
+            document.getElementById("bar").content = "default";
+        else
+            document.getElementById("bar").content = "black-translucent";
     }
 });
 
