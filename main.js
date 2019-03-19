@@ -88,7 +88,11 @@ loadData("chart_data.json", (source) => {
 
             button.onclick = () => {
                 drawer.toggle(+graphId, checkbox.checked);
+                preview.toggle(+graphId, checkbox.checked);
                 render();
+                previewCanvas.width = previewCanvas.clientWidth * 2;
+                previewCanvas.height = previewCanvas.clientHeight * 2;
+                preview.draw();
             }
         }
         
