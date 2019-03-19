@@ -37,12 +37,18 @@ html, body, .theme {
 }
 
 .title {
+    display: block;
     position: relative;
     top: var(--main-margin);
-    margin: var(--main-margin);
+    margin-left: calc(var(--main-margin) / 2);
+    margin-bottom: var(--main-margin);
 
     font-weight: bold;
     color: rgb(var(--color-text));
+
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    user-select: none;
+    cursor: pointer;
 }
 
 #chart {
@@ -125,14 +131,14 @@ html, body, .theme {
 
 .graphs {
     position: relative;
-    top: var(--main-margin);
+    top: calc(var(--main-margin) * 1.5);
 }
 
 .button {
     display: inline-flex;
     align-items: center;
     position: relative;
-    margin: var(--main-margin) 0 0 0;
+    margin: calc(var(--main-margin) / 1.3) calc(var(--main-margin) / 1.3) 0 0;
     padding: 0 calc(var(--button-size) / 3) 0 calc(var(--button-size) / 6);
     width: max-content;
     height: var(--button-size);

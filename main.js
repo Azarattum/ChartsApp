@@ -1,23 +1,14 @@
 "use strict";
 console.debugging = true; ///DEBUG!
-var Charts;
-var Drawer;
-var Preview;
 
 loadData("chart_data.json", (source) => {
-    Charts = Chart.array(source);
+    let drawer, preview;
     let canvas = document.getElementById("chart");
-    let preview = document.getElementById("preview");
-    let chart = Charts[0];
-    Drawer = new ChartDrawer(chart, canvas, {left: 0, bottom: 24});
-    Preview = new ChartDrawer(chart, preview);
-    Preview.layout = false;
-    Preview.lineWidth = 1;
-    
-    render();
-    preview.width = preview.clientWidth;
-    preview.height = preview.clientHeight;
-    Preview.draw();
+    let previewCanvas = document.getElementById("preview");
+    let charts = Chart.array(source);
+    let chartId = 0;
+
+    loadChart(chartId);
 
     //Get elements
     let selector = document.getElementById("select"),
@@ -26,18 +17,25 @@ loadData("chart_data.json", (source) => {
         coverLeft = document.getElementById("cover-left"),
         coverRight = document.getElementById("cover-right");
 
+    //Create controller
     let controller = new ChartController(selector, leftDragger, rightDragger, (start, end) => {
         coverLeft.style.width = start + "%";
         coverRight.style.width = (100 - end) + "%";
-        Drawer.start = start;
-        Drawer.end = end;
+        drawer.start = start;
+        drawer.end = end;
         render();
     });
 
+    document.getElementsByClassName("title")[0].onclick = () => {
+        chartId = (chartId + 1) % charts.length;
+        loadChart(chartId);
+        controller.update();
+    };
+
     window.onresize = () => {
-        preview.width = preview.clientWidth;
-        preview.height = preview.clientHeight;
-        Preview.draw();
+        previewCanvas.width = previewCanvas.clientWidth;
+        previewCanvas.height = previewCanvas.clientHeight;
+        preview.draw();
         controller.update();
         render();
     };
@@ -49,7 +47,51 @@ loadData("chart_data.json", (source) => {
     function render() {
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
-        Drawer.draw();
+        drawer.draw();
+    }
+
+    function loadChart(id) {
+        let chart = charts[id];
+
+        //Create chart drawers
+        drawer = new ChartDrawer(chart, canvas, {left: 0, bottom: 24});
+        preview = new ChartDrawer(chart, previewCanvas);
+        preview.layout = false;
+        preview.lineWidth = 1;
+
+        //Update chart title
+        document.getElementsByClassName("title")[0].innerHTML = "Chart #" + (id + 1);
+        //Update chart buttons
+        let graphs = document.getElementsByClassName("graphs")[0];
+        graphs.innerHTML = "";
+        for (const graphId in chart.graphs) {
+            let button = document.createElement("label");
+            let checkbox = document.createElement("input");
+            let icon = document.createElement("div");
+            let name = document.createTextNode(chart.graphs[+graphId].name);
+
+            button.className = "button";
+            checkbox.type = "checkbox";
+            checkbox.checked = true;
+            icon.className = "icon";
+            icon.style.backgroundColor = chart.graphs[+graphId].color;
+
+            button.appendChild(checkbox);
+            button.appendChild(icon);
+            button.appendChild(name);
+            graphs.appendChild(button);
+
+            button.onclick = () => {
+                drawer.toggle(+graphId, checkbox.checked);
+                render();
+            }
+        }
+        
+        //Render the chart
+        render();
+        previewCanvas.width = previewCanvas.clientWidth;
+        previewCanvas.height = previewCanvas.clientHeight;
+        preview.draw();
     }
 });
 
@@ -368,7 +410,7 @@ class LayoutDrawer {
 
     drawDates(bounds, bottom) {
         let spacing = this.view.width / this.dateCount;
-        let margin = (bottom / 2) + (bottom - (spacing / 8)) / 2;
+        let margin = (bottom / 2) + (bottom - (bottom / 2)) / 2;
         let area = (bounds.right - bounds.left) / this.dateCount;
 
         this.context.fillStyle = this.textColor;
@@ -545,7 +587,8 @@ class ChartDrawer {
      * Draws the layout for the chart.
      */
     drawLayout() {
-        this.layoutDrawer.draw(this.graphDrawers[0].bounds, this.offsets.bottom);
+        if (this.graphDrawers.some(x => x.visible))
+            this.layoutDrawer.draw(this.graphDrawers.find(x => x.visible).bounds, this.offsets.bottom);
     }
 }
 
