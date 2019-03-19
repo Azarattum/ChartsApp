@@ -8,9 +8,6 @@ loadData("chart_data.json", (source) => {
     let charts = Chart.array(source);
     let chartId = 0;
 
-    loadChart(chartId);
-    moibleStyle();
-
     //Get elements
     let selector = document.getElementById("select"),
         leftDragger = document.getElementById("left-dragger"),
@@ -18,19 +15,34 @@ loadData("chart_data.json", (source) => {
         coverLeft = document.getElementById("cover-left"),
         coverRight = document.getElementById("cover-right");
 
+    loadChart(chartId);
+    moibleStyle();
+    
     //Create controller
-    let controller = new ChartController(selector, leftDragger, rightDragger, (start, end) => {
+    let controller = new ChartController(selector, leftDragger, rightDragger);
+    controller.onupdate = (start, end) => {
         coverLeft.style.width = start + "%";
         coverRight.style.width = (100 - end) + "%";
         drawer.start = start;
         drawer.end = end;
         render();
-    });
+    };
+    controller.onstop = () => {
+        render();
+    }
+    controller.update();
+
+    previewCanvas.width = previewCanvas.clientWidth * 2;
+    previewCanvas.height = previewCanvas.clientHeight * 2;
+    preview.draw();
 
     document.getElementsByClassName("title")[0].onclick = () => {
         chartId = (chartId + 1) % charts.length;
         loadChart(chartId);
         controller.update();
+        previewCanvas.width = previewCanvas.clientWidth * 2;
+        previewCanvas.height = previewCanvas.clientHeight * 2;
+        preview.draw();
     };
 
     window.onresize = () => {
@@ -51,14 +63,14 @@ loadData("chart_data.json", (source) => {
     function render() {
         canvas.width = canvas.clientWidth * 2;
         canvas.height = canvas.clientHeight * 2;
-        drawer.draw();
+        drawer.draw(controller.dragging);
     }
 
     function loadChart(id) {
         let chart = charts[id];
 
         //Create chart drawers
-        drawer = new ChartDrawer(chart, canvas, {left: 0, bottom: 48});
+        drawer = new AnimatedChartDrawer(chart, canvas, {left: 0, bottom: 48});
         preview = new ChartDrawer(chart, previewCanvas);
         preview.layout = false;
         preview.lineWidth = 2;
@@ -95,12 +107,6 @@ loadData("chart_data.json", (source) => {
                 preview.draw();
             }
         }
-        
-        //Render the chart
-        render();
-        previewCanvas.width = previewCanvas.clientWidth * 2;
-        previewCanvas.height = previewCanvas.clientHeight * 2;
-        preview.draw();
     }
 
     function moibleStyle() {
@@ -360,6 +366,10 @@ class GraphDrawer {
 }
 
 class LayoutDrawer {
+    /**
+     * Creates an object for drawing a layout.
+     * @param {Element} canvas The canvas for drawing layout.
+     */
     constructor(canvas) {
         //#region Properties
         this.canvas = canvas;
@@ -389,6 +399,11 @@ class LayoutDrawer {
         };
     }
 
+    /**
+     * Draws the layout.
+     * @param {Object} bounds Graph drawer current bounds.
+     * @param {Number} bottom Margin from the bottom (for dates).
+     */
     draw(bounds, bottom) {
         //Update colors
         this.lineColor = "rgba(" +
@@ -402,6 +417,11 @@ class LayoutDrawer {
         this.drawDates(bounds, bottom);
     }
 
+    /**
+     * Draws layout lines.
+     * @param {Object} bounds Graph drawer current bounds.
+     * @param {Number} bottom Margin from the bottom (for dates).
+     */
     drawLines(bounds, bottom) {
         let spacing = this.view.height / this.lineCount;
         let margin = 6;
@@ -428,6 +448,11 @@ class LayoutDrawer {
         }
     }
 
+    /**
+     * Draws layout dates.
+     * @param {Object} bounds Graph drawer current bounds.
+     * @param {Number} bottom Margin from the bottom (for dates).
+     */
     drawDates(bounds, bottom) {
         let spacing = this.view.width / this.dateCount;
         let margin = (bottom / 2) + (bottom - (bottom / 2)) / 2;
@@ -612,6 +637,83 @@ class ChartDrawer {
     }
 }
 
+class AnimatedChartDrawer extends ChartDrawer {
+    constructor(chart, canvas, offsets = {left: 0, bottom: 0}) {
+        super(chart, canvas, offsets);
+        //#region Properties
+        this.topEnd = null;
+        this.animationDuration = 200;
+        this.animation;
+        //#endregion
+    }
+
+    /**
+     * Draws all charts.
+     */
+    draw(preventAnimation = false) {
+        console.debug("Dragging:", preventAnimation);
+        if (this.topEnd == null || preventAnimation) {
+            super.draw();
+            return;
+        }
+
+        let interval = 25;
+        let steps = Math.ceil(this.animationDuration / interval);
+        let i = 0;
+        super.draw();
+        clearInterval(this.animation);
+        this.animation = setInterval(() => {
+            //Setup top bounds
+            for (const drawer of this.graphDrawers) {
+                if (!drawer.visible) continue;
+                let step = (this.topEnd - drawer.topStart) / steps;
+                drawer.bounds.top += step;
+                if (i >= steps) {
+                    drawer.bounds.top = this.topEnd;
+                }
+            }
+            //Draw the result
+            super.draw();
+
+            if (i >= steps) {
+                clearInterval(this.animation);
+                this.topEnd = null;
+                this.topStart = null;
+            }
+            else {
+                i++;
+            }
+        }, interval);
+    }
+
+    /**
+     * Updates viewport height.
+     */
+    updateHeight() {
+        let top = -Number.MAX_SAFE_INTEGER;
+
+        //Calculate max points
+        for (const drawer of this.graphDrawers) {
+            if (!drawer.visible) continue;
+
+            if (this.autoHeight) {
+                let maximum = drawer.localMaximum;
+                if (maximum > top)
+                    top = maximum;
+            }
+            else if (drawer.maxBounds.top > top){
+                top = drawer.maxBounds.top;
+            }
+
+            drawer.topStart = drawer.bounds.top;
+        }
+
+        //Save top bounds
+        console.debug("Goal:", top);
+        this.topEnd = top;
+    }
+}
+
 class ChartController {
     /**
      * Creates an interactive chart controller.
@@ -620,7 +722,7 @@ class ChartController {
      * @param {Element} rightDragger Area right side dragger element.
      * @param {Function} onupdate Callback on controller's update.
      */
-    constructor (selector, leftDragger, rightDragger, onupdate)
+    constructor (selector, leftDragger, rightDragger)
     {
         //#region Properties
         /**Chart area selector element.*/
@@ -636,7 +738,9 @@ class ChartController {
         /**New element position for dragging.*/
         this.positionNew = 0;
         /**Callback on controller's update.*/
-        this.onupdate = onupdate;
+        this.onupdate = () => {};
+        /**Callback on controller's stop.*/
+        this.onstop = () => {};
         //#endregion
         //#region Events Registration
         leftDragger.onmousedown = (e) => {this.startDrag(e, this, 1)};
@@ -646,8 +750,6 @@ class ChartController {
         selector.onmousedown = (e) => {this.startDrag(e, this, 0)};
         selector.ontouchstart = (e) => {this.startDrag(e, this, 0)};
         //#endregion
-
-        this.update();
 
         console.debug("ChartController created", this);
     }
@@ -668,8 +770,8 @@ class ChartController {
 
         //Save the old postion and register the events
         sender.positionOld = eventArgs.clientX;
-        document.onmouseup = sender.stopDrag;
-        document.ontouchend = sender.stopDrag;
+        document.onmouseup = (e) => {sender.stopDrag(sender)};
+        document.ontouchend = (e) => {sender.stopDrag(sender)};
         document.onmousemove = (e) => {sender.drag(e, sender, type)};
         document.ontouchmove = (e) => {sender.drag(e, sender, type)};
 
@@ -734,13 +836,14 @@ class ChartController {
     /**
      * Stops element dragging.
      */
-    stopDrag() {
+    stopDrag(sender) {
         //Clear the events
         document.onmouseup = null;
         document.ontouchend = null;
         document.onmousemove = null;
         document.ontouchmove = null;
 
+        sender.onstop();
         console.debug("Dragging stopped.");
     }
 
@@ -769,6 +872,11 @@ class ChartController {
             this.selector.clientWidth + this.borderWidth) / (size / 100);
 
         this.onupdate(start, end);
+    }
+
+    get dragging() {
+        return !(document.onmouseup == null && document.ontouchend == null &&
+            document.onmousemove == null && document.ontouchmove == null);
     }
 }
 //#endregion
