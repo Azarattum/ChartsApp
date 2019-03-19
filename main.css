@@ -1,5 +1,5 @@
 .page {
-    --main-margin: 8px;
+    --main-margin: 14px;
     --preview-size: 48px;
     --button-size: 40px;
 
@@ -20,6 +20,7 @@
 
 html, body, .theme {
     margin: 0;
+    overflow-x: hidden;
     height: 100%;
     width: 100%;
 }
@@ -57,15 +58,17 @@ html, body, .theme {
     width: 100%;
     height: var(--preview-size);
 
-    filter: brightness(0.8);
     touch-action: none;
+    -ms-touch-select: none;
+    user-select: none;
 }
 
 .preview > .cover {
     position: absolute;
     height: 100%;
 
-    background-color: rgba(0,0,0, 0.15);
+    background-color: rgba(var(--color-background), 0.6);
+    filter: brightness(calc(1 - var(--lowlight)));
 }
 
 .preview > #cover-left {
@@ -100,9 +103,10 @@ html, body, .theme {
     position: absolute;
     
     height: 100%;
-    width: 16px;
+    width: 24px;
 
     cursor: ew-resize;
+    z-index: 100;
 }
 
 .preview > #preview {
@@ -112,11 +116,11 @@ html, body, .theme {
 }
 
 #left-dragger.dragger {
-    left: -10px;
+    left: -18px;
 }
 
 #right-dragger.dragger {
-    right: -10px;
+    right: -18px;
 }
 
 .graphs {

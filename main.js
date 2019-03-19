@@ -9,8 +9,10 @@ loadData("chart_data.json", (source) => {
     let canvas = document.getElementById("chart");
     let preview = document.getElementById("preview");
     let chart = Charts[0];
-    Drawer = new ChartDrawer(chart, canvas);
+    Drawer = new ChartDrawer(chart, canvas, {left: 0, bottom: 24});
     Preview = new ChartDrawer(chart, preview);
+    Preview.layout = false;
+    Preview.lineWidth = 1;
     
     render();
     preview.width = preview.clientWidth;
@@ -38,6 +40,10 @@ loadData("chart_data.json", (source) => {
         Preview.draw();
         controller.update();
         render();
+    };
+
+    document.getElementsByClassName("theme-switch")[0].onclick = () => {
+        setTimeout(render, 10);
     };
 
     function render() {
@@ -246,11 +252,11 @@ class GraphDrawer {
     /**
      * Draws the graph depending on current settings.
      */
-    draw() {
+    draw(lineWidth = 2.5) {
         if (!this.visible) return;
         //Set color
         this.context.strokeStyle = this.graph.color;
-        this.context.lineWidth = 2.5;
+        this.context.lineWidth = lineWidth;
         let widthRatio = this.view.width / (this.maxBounds.right - this.maxBounds.left);
         let heightRatio = this.view.height / (this.bounds.top - this.bounds.bottom);
         widthRatio *=  (this.maxBounds.right - this.maxBounds.left) / (this.bounds.right - this.bounds.left);
@@ -293,7 +299,94 @@ class GraphDrawer {
 }
 
 class LayoutDrawer {
+    constructor(canvas) {
+        //#region Properties
+        this.canvas = canvas;
+        this.context = canvas.getContext("2d");
+        /**Amount of line to draw.*/
+        this.lineCount = 6;
+        this.dateCount = 6;
+        this.lineColor = "rgb(" +
+            window.getComputedStyle(document.getElementsByClassName("page")[0])
+            .getPropertyValue("--color-text") + ", 0.25)";
+        this.textColor = "rgb(" +
+            window.getComputedStyle(document.getElementsByClassName("page")[0])
+            .getPropertyValue("--color-text") + ", 0.5)";
+        //#endregion
 
+        console.debug("LayoutDrawer created", this);
+    }
+
+    /**
+     * Returns size of viewing area.
+     */
+    get view() {
+        return {
+            width: +this.canvas.width,
+            height: +this.canvas.height
+        };
+    }
+
+    draw(bounds, bottom) {
+        //Update colors
+        this.lineColor = "rgb(" +
+            window.getComputedStyle(document.getElementsByClassName("page")[0])
+            .getPropertyValue("--color-text") + ", 0.25)";
+        this.textColor = "rgb(" +
+            window.getComputedStyle(document.getElementsByClassName("page")[0])
+            .getPropertyValue("--color-text") + ", 0.5)";
+
+        this.drawLines(bounds, bottom);
+        this.drawDates(bounds, bottom);
+    }
+
+    drawLines(bounds, bottom) {
+        let spacing = this.view.height / this.lineCount;
+        let margin = 6;
+        let area = (bounds.top - bounds.bottom) / this.lineCount;
+
+        this.context.strokeStyle = this.textColor;
+        this.context.fillStyle = this.textColor;
+        this.context.lineWidth = 1;
+        this.context.font = (spacing / 4) + "px " + 
+            window.getComputedStyle(document.getElementsByClassName("page")[0])["font-family"];
+
+        bottom += this.context.lineWidth;
+        for (let i = 0; i < this.lineCount; i++) {
+            let y = this.view.height - bottom - spacing * i;
+            this.context.beginPath();
+            this.context.moveTo(0,  y);
+            this.context.lineTo(this.view.width, y);
+            this.context.stroke();
+            
+            let label = Math.round(bounds.bottom + area * i);
+            this.context.fillText(label, 0, y - margin);
+            if (i == 0)
+                this.context.strokeStyle = this.lineColor;
+        }
+    }
+
+    drawDates(bounds, bottom) {
+        let spacing = this.view.width / this.dateCount;
+        let margin = (bottom / 2) + (bottom - (spacing / 8)) / 2;
+        let area = (bounds.right - bounds.left) / this.dateCount;
+
+        this.context.fillStyle = this.textColor;
+        this.context.font = (bottom / 2) + "px " + 
+            window.getComputedStyle(document.getElementsByClassName("page")[0])["font-family"];
+
+        for (let i = 0; i < this.dateCount; i++) {
+            let x = spacing * i;
+            
+            let label = Math.round(bounds.left + area * i);
+            label = (new Date(label)).toString().split(' ')[1] + " " +
+                (new Date(label)).toString().split(' ')[2];
+
+            this.context.fillText(label, x + (bottom / 10), this.view.height - bottom + margin);
+            if (i == 0)
+                this.context.strokeStyle = this.lineColor;
+        }
+    }
 }
 
 class ChartDrawer {
@@ -305,6 +398,8 @@ class ChartDrawer {
         //#region Properties
         /**Graph drawer objects.*/
         this.graphDrawers = [];
+        /**Layout drawer object.*/
+        this.layoutDrawer = new LayoutDrawer(canvas);
         /**The maximum drawing size.*/
         this.size = 0;
         /**The minimal left bound.*/
@@ -313,8 +408,14 @@ class ChartDrawer {
         this.maxRight = -Number.MAX_SAFE_INTEGER;
         /**Whether adjust drawing height automaticaly depending on maximum point or not.*/
         this.autoHeight = true;
+        /**Whether draw layout or not.*/
+        this.layout = true;
         /**Clear function.*/
         this.clear = () => {};
+        /**The width of graph line to draw.*/
+        this.lineWidth = 2.5;
+        /**The user defined offsets.*/
+        this.offsets = offsets;
         //#endregion
 
         //Initilizing graph drawers
@@ -428,6 +529,7 @@ class ChartDrawer {
     draw() {
         this.clear();
         this.drawGraphs();
+        if (this.layout) this.drawLayout();
     }
 
     /**
@@ -435,22 +537,42 @@ class ChartDrawer {
      */
     drawGraphs() {
         for (const drawer of this.graphDrawers) {
-            drawer.draw();
+            drawer.draw(this.lineWidth);
         }
+    }
+
+    /**
+     * Draws the layout for the chart.
+     */
+    drawLayout() {
+        this.layoutDrawer.draw(this.graphDrawers[0].bounds, this.offsets.bottom);
     }
 }
 
 class ChartController {
+    /**
+     * Creates an interactive chart controller.
+     * @param {Element} selector Chart area selector element.
+     * @param {Element} leftDragger Area left side dragger element.
+     * @param {Element} rightDragger Area right side dragger element.
+     * @param {Function} onupdate Callback on controller's update.
+     */
     constructor (selector, leftDragger, rightDragger, onupdate)
     {
         //#region Properties
+        /**Chart area selector element.*/
         this.selector = selector;
+        /**Border width style of the selector element.*/
         this.borderWidth = parseInt(window.getComputedStyle(selector)["border-left-width"]) * 2;
+        /**Minimum width style of the selector element.*/
         this.minWidth = 
             parseInt(window.getComputedStyle(selector)["min-width"]) + this.borderWidth;
 
+        /**Old element position for dragging.*/
         this.positionOld = 0;
+        /**New element position for dragging.*/
         this.positionNew = 0;
+        /**Callback on controller's update.*/
         this.onupdate = onupdate;
         //#endregion
         //#region Events Registration
@@ -466,7 +588,13 @@ class ChartController {
 
         console.debug("ChartController created", this);
     }
-              
+    
+    /**
+     * Starts element dragging.
+     * @param {Object} eventArgs Event arguments.
+     * @param {ChartController} sender Sender element's class.
+     * @param {Number} type Type of dragging (0-2).
+     */
     startDrag(eventArgs, sender, type) {
         eventArgs = eventArgs || window.event;
         if (!eventArgs.clientX && eventArgs.touches) {
@@ -485,6 +613,12 @@ class ChartController {
         console.debug("Dragging started.");
     }
 
+    /**
+     * Performs element dragging.
+     * @param {Object} eventArgs Event arguments.
+     * @param {ChartController} sender Sender element's class.
+     * @param {Number} type Type of dragging (0-2).
+     */
     drag(eventArgs, sender, type) {
         console.debug("Dragging...")
         eventArgs = eventArgs || window.event;
@@ -534,6 +668,9 @@ class ChartController {
         sender.update();
     }
 
+    /**
+     * Stops element dragging.
+     */
     stopDrag() {
         //Clear the events
         document.onmouseup = null;
@@ -544,6 +681,9 @@ class ChartController {
         console.debug("Dragging stopped.");
     }
 
+    /**
+     * Makes sure that the element is inside boudary box if not normalizes.
+     */
     normalize() {
         if (parseInt(this.selector.style.left) < 0) {
             this.selector.style.left = "0px";
@@ -556,6 +696,9 @@ class ChartController {
         }
     }
 
+    /**
+     * Updates current state of the controller and invokes callback.
+     */
     update() {
         let size = this.selector.parentNode.clientWidth;
         let start = this.selector.offsetLeft / (size / 100);
