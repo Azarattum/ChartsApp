@@ -33,8 +33,8 @@ loadData("chart_data.json", (source) => {
     };
 
     window.onresize = () => {
-        previewCanvas.width = previewCanvas.clientWidth;
-        previewCanvas.height = previewCanvas.clientHeight;
+        previewCanvas.width = previewCanvas.clientWidth * 2;
+        previewCanvas.height = previewCanvas.clientHeight * 2;
         preview.draw();
         controller.update();
         render();
@@ -45,8 +45,8 @@ loadData("chart_data.json", (source) => {
     };
 
     function render() {
-        canvas.width = canvas.clientWidth;
-        canvas.height = canvas.clientHeight;
+        canvas.width = canvas.clientWidth * 2;
+        canvas.height = canvas.clientHeight * 2;
         drawer.draw();
     }
 
@@ -54,10 +54,11 @@ loadData("chart_data.json", (source) => {
         let chart = charts[id];
 
         //Create chart drawers
-        drawer = new ChartDrawer(chart, canvas, {left: 0, bottom: 24});
+        drawer = new ChartDrawer(chart, canvas, {left: 0, bottom: 48});
         preview = new ChartDrawer(chart, previewCanvas);
         preview.layout = false;
-        preview.lineWidth = 1;
+        preview.lineWidth = 2;
+        drawer.lineWidth = 5;
 
         //Update chart title
         document.getElementsByClassName("title")[0].innerHTML = "Chart #" + (id + 1);
@@ -89,8 +90,8 @@ loadData("chart_data.json", (source) => {
         
         //Render the chart
         render();
-        previewCanvas.width = previewCanvas.clientWidth;
-        previewCanvas.height = previewCanvas.clientHeight;
+        previewCanvas.width = previewCanvas.clientWidth * 2;
+        previewCanvas.height = previewCanvas.clientHeight * 2;
         preview.draw();
     }
 });
@@ -348,12 +349,13 @@ class LayoutDrawer {
         /**Amount of line to draw.*/
         this.lineCount = 6;
         this.dateCount = 6;
-        this.lineColor = "rgb(" +
+        this.lineColor = "rgba(" +
             window.getComputedStyle(document.getElementsByClassName("page")[0])
-            .getPropertyValue("--color-text") + ", 0.25)";
-        this.textColor = "rgb(" +
+            .getPropertyValue("--color-text").trim() + ", 0.25)";
+        //alert(this.lineColor);
+        this.textColor = "rgba(" +
             window.getComputedStyle(document.getElementsByClassName("page")[0])
-            .getPropertyValue("--color-text") + ", 0.5)";
+            .getPropertyValue("--color-text").trim() + ", 0.5)";
         //#endregion
 
         console.debug("LayoutDrawer created", this);
@@ -371,12 +373,12 @@ class LayoutDrawer {
 
     draw(bounds, bottom) {
         //Update colors
-        this.lineColor = "rgb(" +
+        this.lineColor = "rgba(" +
             window.getComputedStyle(document.getElementsByClassName("page")[0])
-            .getPropertyValue("--color-text") + ", 0.25)";
-        this.textColor = "rgb(" +
+            .getPropertyValue("--color-text").trim() + ", 0.25)";
+        this.textColor = "rgba(" +
             window.getComputedStyle(document.getElementsByClassName("page")[0])
-            .getPropertyValue("--color-text") + ", 0.5)";
+            .getPropertyValue("--color-text").trim() + ", 0.5)";
 
         this.drawLines(bounds, bottom);
         this.drawDates(bounds, bottom);
