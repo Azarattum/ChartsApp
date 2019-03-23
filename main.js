@@ -1,4 +1,3 @@
-"use strict";
 console.debugging = true; ///DEBUG!
 
 loadData("chart_data.json", (source) => {
@@ -17,7 +16,7 @@ loadData("chart_data.json", (source) => {
 
     loadChart(chartId);
     moibleStyle();
-    
+
     //Create controller
     let controller = new ChartController(selector, leftDragger, rightDragger);
     controller.onupdate = (start, end) => {
@@ -25,11 +24,12 @@ loadData("chart_data.json", (source) => {
         coverRight.style.width = (100 - end) + "%";
         drawer.start = start;
         drawer.end = end;
+        //drawer.layoutDrawer.dateCount = Math.round(Math.interpolate(5, 7, 1 - (end - start) / 100));
         render();
     };
     controller.onstop = () => {
         render();
-    }
+    };
     controller.update();
 
     previewCanvas.width = previewCanvas.clientWidth * 2;
@@ -70,7 +70,10 @@ loadData("chart_data.json", (source) => {
         let chart = charts[id];
 
         //Create chart drawers
-        drawer = new AnimatedChartDrawer(chart, canvas, {left: 0, bottom: 48});
+        drawer = new AnimatedChartDrawer(chart, canvas, {
+            left: 0,
+            bottom: 48
+        });
         preview = new ChartDrawer(chart, previewCanvas);
         preview.layout = false;
         preview.lineWidth = 2;
@@ -110,8 +113,8 @@ loadData("chart_data.json", (source) => {
     }
 
     function moibleStyle() {
-        document.body.style.backgroundColor = 
-                window.getComputedStyle(document.getElementsByClassName("page")[0])["background-color"];
+        document.body.style.backgroundColor =
+            window.getComputedStyle(document.getElementsByClassName("page")[0])["background-color"];
         ///CODE BELLOW DOES NOT WORK!
         if (document.getElementById("theme-checkbox").checked)
             document.getElementById("bar").content = "default";
@@ -126,7 +129,7 @@ class Chart {
      * Creates a chart object.
      * @param {Object} source Source JSON string, object or filename to create a chart.
      */
-    constructor (source) {
+    constructor(source) {
         //#region Properties
         /**Whether the chart is loaded or not.*/
         this.ready = false;
@@ -142,8 +145,7 @@ class Chart {
             //Try to parse from json string
             try {
                 source = JSON.parse(source);
-            } 
-            catch {
+            } catch {
                 throw new Error("Source is not a valid JSON object!");
             }
         }
@@ -153,12 +155,12 @@ class Chart {
         }
 
         if (!(
-            typeof source === "object" &&
-            typeof source.colors === "object" &&
-            typeof source.columns === "object" &&
-            typeof source.names === "object" &&
-            typeof source.types === "object"
-        )) {
+                typeof source === "object" &&
+                typeof source.colors === "object" &&
+                typeof source.columns === "object" &&
+                typeof source.names === "object" &&
+                typeof source.types === "object"
+            )) {
             throw new Error("Wrong source format!");
         }
         //#endregion
@@ -173,7 +175,7 @@ class Chart {
      */
     _initialize(source) {
         console.debug("Source parsed", source);
-        
+
         //Define z axis
         const xType = Object.keys(source.types).find(x => source.types[x] == "x");
         let xValues = source.columns.find(x => x[0] == xType);
@@ -192,7 +194,7 @@ class Chart {
             xValues.forEach((x, i) => {
                 values[x] = yValues[i];
             });
-            
+
             //Create a graph
             this.graphs.push(
                 new Graph(values, color, name)
@@ -216,17 +218,16 @@ class Chart {
             //Try to parse from json string
             try {
                 source = JSON.parse(source);
-            } 
-            catch {
+            } catch {
                 throw new Error("Source is not a valid JSON object!");
             }
         }
-        
+
         if (!Array.isArray(source)) {
             throw new Error("Source is not an array! Use \"new Chart\" if it is a chart source.");
         }
         //#endregion
-        
+
         let charts = [];
         for (const chart of source) {
             charts.push(new Chart(chart));
@@ -241,7 +242,7 @@ class Graph {
      * Creates a graph object.
      * @param {Object} source Source object to create a graph.
      */
-    constructor (values, color, name) {
+    constructor(values, color, name) {
         //#region Properties
         /**Graph x and y values.*/
         this.values = values;
@@ -259,7 +260,10 @@ class GraphDrawer {
      * Creates an object for drawing graphs.
      * @param {Graph} graph The graph to draw.
      */
-    constructor (graph, canvas, offsets = {left: 0, bottom: 0}) {
+    constructor(graph, canvas, offsets = {
+        left: 0,
+        bottom: 0
+    }) {
         //#region Properties
         /**The graph to draw.*/
         this.graph = graph;
@@ -268,7 +272,7 @@ class GraphDrawer {
             left: +Object.keys(graph.values)[0],
             right: +Object.keys(graph.values)[Object.keys(graph.values).length - 1],
             top: +Math.max.apply(Math, Object.values(graph.values)),
-            bottom: 0//+Math.min.apply(Math, Object.values(graph.values))
+            bottom: Math.min(0, +Math.min.apply(Math, Object.values(graph.values)))
         }
         /**Current drawing bound.*/
         this.bounds = Object.assign({}, this.maxBounds);
@@ -306,7 +310,7 @@ class GraphDrawer {
                 continue;
             if (x > this.bounds.right)
                 break;
-            
+
             const y = this.graph.values[x];
 
             if (y > maximum)
@@ -326,7 +330,7 @@ class GraphDrawer {
         this.context.lineWidth = lineWidth;
         let widthRatio = this.view.width / (this.maxBounds.right - this.maxBounds.left);
         let heightRatio = this.view.height / (this.bounds.top - this.bounds.bottom);
-        widthRatio *=  (this.maxBounds.right - this.maxBounds.left) / (this.bounds.right - this.bounds.left);
+        widthRatio *= (this.maxBounds.right - this.maxBounds.left) / (this.bounds.right - this.bounds.left);
         //Start drawing
         this.context.beginPath();
         let firstPoint;
@@ -339,13 +343,12 @@ class GraphDrawer {
                 continue;
             }
 
-            if (firstPoint != null)
-            {
+            if (firstPoint != null) {
                 const y0 = this.graph.values[firstPoint];
 
                 let dx0 = (firstPoint - this.bounds.left) * widthRatio + this.offsets.left;
                 let dy0 = (y0 - this.bounds.bottom) * heightRatio;
-                
+
                 this.context.moveTo(dx0, this.view.height - dy0);
 
                 firstPoint = null;
@@ -353,7 +356,7 @@ class GraphDrawer {
 
             let dx = (x - this.bounds.left) * widthRatio + this.offsets.left;
             let dy = (y - this.bounds.bottom) * heightRatio;
-            
+
             this.context.lineTo(dx, this.view.height - dy);
             //console.debug("Draw to", dx, dy); ///DEBUG!
 
@@ -376,11 +379,11 @@ class LayoutDrawer {
         this.context = canvas.getContext("2d");
         /**Amount of line to draw.*/
         this.lineCount = 6;
-        this.dateCount = 6;
+        this.dateCount = 7;
+        this.dateScale = 4;
         this.lineColor = "rgba(" +
             window.getComputedStyle(document.getElementsByClassName("page")[0])
             .getPropertyValue("--color-text").trim() + ", 0.25)";
-        //alert(this.lineColor);
         this.textColor = "rgba(" +
             window.getComputedStyle(document.getElementsByClassName("page")[0])
             .getPropertyValue("--color-text").trim() + ", 0.5)";
@@ -404,7 +407,7 @@ class LayoutDrawer {
      * @param {Object} bounds Graph drawer current bounds.
      * @param {Number} bottom Margin from the bottom (for dates).
      */
-    draw(bounds, bottom) {
+    draw(bounds, maxBounds, bottom) {
         //Update colors
         this.lineColor = "rgba(" +
             window.getComputedStyle(document.getElementsByClassName("page")[0])
@@ -414,7 +417,12 @@ class LayoutDrawer {
             .getPropertyValue("--color-text").trim() + ", 0.5)";
 
         this.drawLines(bounds, bottom);
-        this.drawDates(bounds, bottom);
+
+        this.context.fillStyle = this.textColor;
+        this.context.font = (bottom / 2) + "px " +
+            window.getComputedStyle(document.getElementsByClassName("page")[0])["font-family"];
+
+        this.drawDates(bounds, maxBounds, bottom);
     }
 
     /**
@@ -430,17 +438,17 @@ class LayoutDrawer {
         this.context.strokeStyle = this.textColor;
         this.context.fillStyle = this.textColor;
         this.context.lineWidth = 1;
-        this.context.font = (spacing / 4) + "px " + 
+        this.context.font = (spacing / 4) + "px " +
             window.getComputedStyle(document.getElementsByClassName("page")[0])["font-family"];
 
         bottom += this.context.lineWidth;
         for (let i = 0; i < this.lineCount; i++) {
             let y = this.view.height - bottom - spacing * i;
             this.context.beginPath();
-            this.context.moveTo(0,  y);
+            this.context.moveTo(0, y);
             this.context.lineTo(this.view.width, y);
             this.context.stroke();
-            
+
             let label = Math.round(bounds.bottom + area * i);
             this.context.fillText(label, 0, y - margin);
             if (i == 0)
@@ -453,26 +461,69 @@ class LayoutDrawer {
      * @param {Object} bounds Graph drawer current bounds.
      * @param {Number} bottom Margin from the bottom (for dates).
      */
-    drawDates(bounds, bottom) {
-        let spacing = this.view.width / this.dateCount;
-        let margin = (bottom / 2) + (bottom - (bottom / 2)) / 2;
-        let area = (bounds.right - bounds.left) / this.dateCount;
+    drawDates(bounds, maxBounds, bottom) {
+        const margin = (bottom / 2) + (bottom - (bottom / 2)) / 2 - bottom;
+        const left = bounds.left - maxBounds.left;
 
-        this.context.fillStyle = this.textColor;
-        this.context.font = (bottom / 2) + "px " + 
-            window.getComputedStyle(document.getElementsByClassName("page")[0])["font-family"];
+        const size = (bounds.right - bounds.left);
+        const spacing = this.view.width / (this.dateCount - 1);
+        const area = size / (this.dateCount - 1);
 
+        const maxSize = (maxBounds.right - maxBounds.left);
+        const zoom = size / maxSize;
+        const ratio = size / this.view.width;
+
+        const offset = ((left * zoom) % area) / ratio;
+
+        let scale = 1 / Math.pow(2, this.dateScale + 1);
         for (let i = 0; i < this.dateCount; i++) {
-            let x = spacing * i;
-            
-            let label = Math.round(bounds.left + area * i);
-            label = (new Date(label)).toString().split(' ')[1] + " " +
-                (new Date(label)).toString().split(' ')[2];
+            let x = spacing / Math.pow(2, this.dateScale) * i;
 
-            this.context.fillText(label, x + (bottom / 10), this.view.height - bottom + margin);
-            if (i == 0)
-                this.context.strokeStyle = this.lineColor;
+            x -= offset;
+
+            for (let s = Math.pow(2, this.dateScale); s >= 2; s /= 2) {
+                let expected = Math.pow(2, (this.dateScale - Math.log2(s)));
+                if (expected > this.dateCount) {
+                    expected = expected % this.dateCount;
+                } else if (expected == this.dateCount) {
+                    expected = 1;
+                }
+
+                let modulo = (i % (expected * 2)) - (i % expected);
+
+                if (zoom > (1 / s)) {
+                    scale = (1 / s);
+                    if (modulo == expected) {
+                        //Important: date moving
+                        x += spacing * (this.dateCount / s);
+                    }
+                }
+            }
+
+            while (x / scale < (-bottom * 1.5)) {
+                x += spacing * (this.dateCount * scale * 2);
+            }
+
+            x /= zoom;
+
+            this.drawDate(bounds, ratio, margin, x);
         }
+        console.debug("Scale: ", scale);
+    }
+
+    /**
+     * Draws the date based on graph bounds and provided coordinate.
+     * @param {Object} bounds Graph bounds.
+     * @param {Number} ratio Ratio between bounds size and viewing size.
+     * @param {Number} margin Bottom magin.
+     * @param {Number} x Coordinate to draw.
+     */
+    drawDate(bounds, ratio, margin, x) {
+        let label = Math.round(bounds.left + x * ratio);
+        label = (new Date(label)).toString().split(' ')[1] + " " +
+            (new Date(label)).toString().split(' ')[2];
+
+        this.context.fillText(label, x, this.view.height + margin);
     }
 }
 
@@ -481,7 +532,10 @@ class ChartDrawer {
      * Creates an object for drawing charts.
      * @param {Chart} chart The chart to draw.
      */
-    constructor (chart, canvas, offsets = {left: 0, bottom: 0}) {
+    constructor(chart, canvas, offsets = {
+        left: 0,
+        bottom: 0
+    }) {
         //#region Properties
         /**Graph drawer objects.*/
         this.graphDrawers = [];
@@ -575,8 +629,7 @@ class ChartDrawer {
     toggle(id, state = undefined) {
         if (state == undefined) {
             this.graphDrawers[id].visible = !this.graphDrawers[id].visible;
-        }
-        else {
+        } else {
             this.graphDrawers[id].visible = state;
         }
 
@@ -597,8 +650,7 @@ class ChartDrawer {
                 let maximum = drawer.localMaximum;
                 if (maximum > top)
                     top = maximum;
-            }
-            else if (drawer.maxBounds.top > top){
+            } else if (drawer.maxBounds.top > top) {
                 top = drawer.maxBounds.top;
             }
         }
@@ -632,13 +684,18 @@ class ChartDrawer {
      * Draws the layout for the chart.
      */
     drawLayout() {
-        if (this.graphDrawers.some(x => x.visible))
-            this.layoutDrawer.draw(this.graphDrawers.find(x => x.visible).bounds, this.offsets.bottom);
+        if (this.graphDrawers.some(x => x.visible)) {
+            let visibleDrawer = this.graphDrawers.find(x => x.visible);
+            this.layoutDrawer.draw(visibleDrawer.bounds, visibleDrawer.maxBounds, this.offsets.bottom);
+        }
     }
 }
 
 class AnimatedChartDrawer extends ChartDrawer {
-    constructor(chart, canvas, offsets = {left: 0, bottom: 0}) {
+    constructor(chart, canvas, offsets = {
+        left: 0,
+        bottom: 0
+    }) {
         super(chart, canvas, offsets);
         //#region Properties
         this.topEnd = null;
@@ -679,8 +736,7 @@ class AnimatedChartDrawer extends ChartDrawer {
                 clearInterval(this.animation);
                 this.topEnd = null;
                 this.topStart = null;
-            }
-            else {
+            } else {
                 i++;
             }
         }, interval);
@@ -700,8 +756,7 @@ class AnimatedChartDrawer extends ChartDrawer {
                 let maximum = drawer.localMaximum;
                 if (maximum > top)
                     top = maximum;
-            }
-            else if (drawer.maxBounds.top > top){
+            } else if (drawer.maxBounds.top > top) {
                 top = drawer.maxBounds.top;
             }
 
@@ -722,15 +777,14 @@ class ChartController {
      * @param {Element} rightDragger Area right side dragger element.
      * @param {Function} onupdate Callback on controller's update.
      */
-    constructor (selector, leftDragger, rightDragger)
-    {
+    constructor(selector, leftDragger, rightDragger) {
         //#region Properties
         /**Chart area selector element.*/
         this.selector = selector;
         /**Border width style of the selector element.*/
         this.borderWidth = parseInt(window.getComputedStyle(selector)["border-left-width"]) * 2;
         /**Minimum width style of the selector element.*/
-        this.minWidth = 
+        this.minWidth =
             parseInt(window.getComputedStyle(selector)["min-width"]) + this.borderWidth;
 
         /**Old element position for dragging.*/
@@ -743,17 +797,29 @@ class ChartController {
         this.onstop = () => {};
         //#endregion
         //#region Events Registration
-        leftDragger.onmousedown = (e) => {this.startDrag(e, this, 1)};
-        leftDragger.ontouchstart = (e) => {this.startDrag(e, this, 1)};
-        rightDragger.onmousedown = (e) => {this.startDrag(e, this, 2)};
-        rightDragger.ontouchstart = (e) => {this.startDrag(e, this, 2)};
-        selector.onmousedown = (e) => {this.startDrag(e, this, 0)};
-        selector.ontouchstart = (e) => {this.startDrag(e, this, 0)};
+        leftDragger.onmousedown = (e) => {
+            this.startDrag(e, this, 1)
+        };
+        leftDragger.ontouchstart = (e) => {
+            this.startDrag(e, this, 1)
+        };
+        rightDragger.onmousedown = (e) => {
+            this.startDrag(e, this, 2)
+        };
+        rightDragger.ontouchstart = (e) => {
+            this.startDrag(e, this, 2)
+        };
+        selector.onmousedown = (e) => {
+            this.startDrag(e, this, 0)
+        };
+        selector.ontouchstart = (e) => {
+            this.startDrag(e, this, 0)
+        };
         //#endregion
 
         console.debug("ChartController created", this);
     }
-    
+
     /**
      * Starts element dragging.
      * @param {Object} eventArgs Event arguments.
@@ -770,10 +836,18 @@ class ChartController {
 
         //Save the old postion and register the events
         sender.positionOld = eventArgs.clientX;
-        document.onmouseup = (e) => {sender.stopDrag(sender)};
-        document.ontouchend = (e) => {sender.stopDrag(sender)};
-        document.onmousemove = (e) => {sender.drag(e, sender, type)};
-        document.ontouchmove = (e) => {sender.drag(e, sender, type)};
+        document.onmouseup = (e) => {
+            sender.stopDrag(sender)
+        };
+        document.ontouchend = (e) => {
+            sender.stopDrag(sender)
+        };
+        document.onmousemove = (e) => {
+            sender.drag(e, sender, type)
+        };
+        document.ontouchmove = (e) => {
+            sender.drag(e, sender, type)
+        };
 
         console.debug("Dragging started.");
     }
@@ -802,8 +876,7 @@ class ChartController {
             if (left < 0) left = 0;
 
             sender.selector.style.left = left + "px";
-        }
-        else if (type === 1) {
+        } else if (type === 1) {
             let width = sender.selector.clientWidth + sender.positionNew;
             let left = sender.selector.offsetLeft - sender.positionNew;
 
@@ -815,15 +888,14 @@ class ChartController {
                 width -= -left;
                 left = 0;
             }
-            
+
             sender.selector.style.left = left + "px";
             sender.selector.style.width = width + "px";
-        }
-        else if (type === 2){
+        } else if (type === 2) {
             let width = sender.selector.clientWidth - sender.positionNew;
             if (width + sender.selector.offsetLeft + sender.borderWidth >
                 sender.selector.parentNode.clientWidth) {
-                    width = sender.selector.clientWidth;
+                width = sender.selector.clientWidth;
             }
 
             sender.selector.style.width = width + "px";
@@ -854,11 +926,11 @@ class ChartController {
         if (parseInt(this.selector.style.left) < 0) {
             this.selector.style.left = "0px";
         }
-        if ((parseInt(this.selector.style.left) 
-            + this.selector.clientWidth + this.borderWidth) > 
+        if ((parseInt(this.selector.style.left) +
+                this.selector.clientWidth + this.borderWidth) >
             this.selector.parentNode.clientWidth) {
             this.selector.style.left = (this.selector.parentNode.clientWidth -
-                 this.selector.clientWidth - this.borderWidth) + "px";
+                this.selector.clientWidth - this.borderWidth) + "px";
         }
     }
 
@@ -868,7 +940,7 @@ class ChartController {
     update() {
         let size = this.selector.parentNode.clientWidth;
         let start = this.selector.offsetLeft / (size / 100);
-        let end = (this.selector.offsetLeft + 
+        let end = (this.selector.offsetLeft +
             this.selector.clientWidth + this.borderWidth) / (size / 100);
 
         this.onupdate(start, end);
@@ -883,11 +955,11 @@ class ChartController {
 
 //#region Miscellaneous 
 //Active pseudo-class mobile compatibility
-document.addEventListener("touchstart", function(){}, true);
+document.addEventListener("touchstart", function () {}, true);
 
 //Custom debugging output
-console.debug = function() {
-    if(!console.debugging) return;
+console.debug = function () {
+    if (!console.debugging) return;
     console.log.apply(this, arguments);
 };
 
@@ -907,5 +979,9 @@ function loadData(url, callback) {
         }
     };
     requestObject.send();
+}
+
+Math.interpolate = (min, max, value) => {
+    return min + (value * (max - min));
 }
 //#endregion
