@@ -458,6 +458,7 @@ class LayoutDrawer {
         this.lineCount = 6;
         this.dateCount = 7;
         this.dateScale = 4;
+        this.fades = [];
         this.lineColor = "rgba(" +
             window.getComputedStyle(document.getElementsByClassName("page")[0])
             .getPropertyValue("--color-text").trim() + ", 0.25)";
@@ -566,8 +567,10 @@ class LayoutDrawer {
         const offset = ((left * zoom) % area) / ratio;
 
         let scale = 1 / Math.pow(2, this.dateScale + 1);
+        
         for (let i = 0; i < this.dateCount; i++) {
             let x = spacing / Math.pow(2, this.dateScale) * i;
+            let x0 = x;
 
             x -= offset;
 
@@ -584,19 +587,29 @@ class LayoutDrawer {
                 if (zoom > (1 / s)) {
                     scale = (1 / s);
                     if (modulo == expected) {
-                        //Important: date moving
                         x += spacing * (this.dateCount / s);
+                        x0 += spacing * (this.dateCount / s);
                     }
                 }
             }
 
             while (x / scale < (-bottom * 3)) {
                 x += spacing * (this.dateCount * scale * 2);
+                x0 += spacing * (this.dateCount * scale * 2);
             }
 
             x /= zoom;
+            x0 /= zoom;
+
+            const int = 1 / zoom;
+            const min = 1 / scale / 2;
+            const max = 1 / scale;
+            if ((int - min) / (max - min) < 0.25 && scale < 0.5) {
+                this.context.globalAlpha = ((x0 + spacing) % (spacing * 2)) / (spacing / 4);
+            }
 
             this.drawDate(bounds, ratio, margin, x);
+            this.context.globalAlpha = 1;
         }
     }
 
