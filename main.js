@@ -1,5 +1,6 @@
 console.debugging = true; ///DEBUG!
 
+//#region Main
 loadData("chart_data.json", (source) => {
     let drawer, preview;
     let canvas = document.getElementById("chart");
@@ -26,10 +27,10 @@ loadData("chart_data.json", (source) => {
         drawer.end = end;
     };
     controller.onselect = (x, value, visible) => {
-        drawer.select = visible? value : undefined;
+        drawer.select = visible ? value : undefined;
         let tooltip = document.getElementById("tooltip");
         tooltip.style.left = (x - tooltip.clientWidth / 3) + "px";
-        tooltip.style.opacity = visible? "1" : "0";
+        tooltip.style.opacity = visible ? "1" : "0";
 
         if (visible) {
             let date = new Date(+drawer.selection.date).toString();
@@ -37,7 +38,7 @@ loadData("chart_data.json", (source) => {
             document.getElementById("date").innerHTML = date;
             let values = document.getElementById("values").children;
             for (let i = 0; i < values.length; i++) {
-                values[i].style.display = drawer.graphDrawers[i].visible? "block" : "none";
+                values[i].style.display = drawer.graphDrawers[i].visible ? "block" : "none";
                 values[i].children[0].innerHTML = drawer.selection.values[i];
             }
         }
@@ -130,9 +131,9 @@ loadData("chart_data.json", (source) => {
 
             button.onclick = (e) => {
                 let visibleGraphs = drawer.graphDrawers.reduce((n, x) => {
-                    return n + (x.visible ? 1  : 0);
+                    return n + (x.visible ? 1 : 0);
                 }, 0);
-                
+
                 if (drawer.graphDrawers[+graphId].visible && visibleGraphs == 1) {
                     return false;
                 }
@@ -155,6 +156,7 @@ loadData("chart_data.json", (source) => {
 
     render();
 });
+//#endregion
 
 //#region Classes
 class Chart {
@@ -166,8 +168,6 @@ class Chart {
         //#region Properties
         /**Whether the chart is loaded or not.*/
         this.ready = false;
-        /**Fires after the chart loaded and processed all data.*/
-        this.onload = () => {};
         /**Returns the contained graph objects.*/
         this.graphs = [];
         //#endregion
@@ -235,7 +235,6 @@ class Chart {
         }
 
         this.ready = true;
-        this.onload();
         console.debug("Chart initialized", this);
     }
 
@@ -322,6 +321,9 @@ class GraphDrawer {
         console.debug("GraphDrawer created", this);
     }
 
+    /**
+     * Visible property. Can be AnimationObject.
+     */
     set visible(value) {
         if (value === true) value = 1;
         if (value === false) value = 0;
@@ -329,6 +331,9 @@ class GraphDrawer {
         this._visible = value;
     }
 
+    /**
+     * Visible property. Can be AnimationObject.
+     */
     get visible() {
         if (this._visible instanceof AnimationObject) {
             return !(this._visible.get() == 0);
@@ -337,11 +342,14 @@ class GraphDrawer {
         }
     }
 
+    /**
+     * Visibility value from 0 to 1.
+     */
     get visibility() {
         if (this._visible instanceof AnimationObject) {
             return this._visible.get();
         } else {
-            return this._visible? 1 : 0;
+            return this._visible ? 1 : 0;
         }
     }
 
@@ -458,7 +466,6 @@ class LayoutDrawer {
         this.lineCount = 6;
         this.dateCount = 7;
         this.dateScale = 4;
-        this.fades = [];
         this.lineColor = "rgba(" +
             window.getComputedStyle(document.getElementsByClassName("page")[0])
             .getPropertyValue("--color-text").trim() + ", 0.25)";
@@ -485,7 +492,7 @@ class LayoutDrawer {
      * @param {Object} bounds Graph drawer current bounds.
      * @param {Number} bottom Margin from the bottom (for dates).
      */
-    draw(bounds, maxBounds, bottom, selection) {
+    draw(bounds, maxBounds, bottom) {
         //Update colors
         this.lineColor = "rgba(" +
             window.getComputedStyle(document.getElementsByClassName("page")[0])
@@ -495,9 +502,6 @@ class LayoutDrawer {
             .getPropertyValue("--color-text").trim() + ", 0.5)";
 
         this.drawLines(bounds, maxBounds, bottom);
-        if (selection != null) {
-            this.drawSelection(selection, bounds, bottom);
-        }
 
         this.context.fillStyle = this.textColor;
         this.context.font = (bottom / 2) + "px " +
@@ -567,7 +571,7 @@ class LayoutDrawer {
         const offset = ((left * zoom) % area) / ratio;
 
         let scale = 1 / Math.pow(2, this.dateScale + 1);
-        
+
         for (let i = 0; i < this.dateCount; i++) {
             let x = spacing / Math.pow(2, this.dateScale) * i;
             let x0 = x;
@@ -680,7 +684,10 @@ class ChartDrawer {
         /**The user defined offsets.*/
         this.offsets = offsets;
         /**The selection.*/
-        this.selection = {date: null, values: []};
+        this.selection = {
+            date: null,
+            values: []
+        };
         //#endregion
 
         //Initilizing graph drawers
@@ -757,7 +764,7 @@ class ChartDrawer {
             const visibleGraph = this.graph;
             const size = visibleGraph.bounds.right - visibleGraph.bounds.left;
             const position = visibleGraph.bounds.left + (size * percent);
-            
+
             this.selection.values = [];
             for (const drawer of this.graphDrawers) {
                 if (!drawer.visible) {
@@ -792,12 +799,14 @@ class ChartDrawer {
     toggle(id, state = undefined) {
         if (state == undefined) {
             state = (!this.graphDrawers[id].visible);
-        } 
-        this.graphDrawers[id].visible = state ? 
-            new AnimationObject(this.graphDrawers[id].visible, 1, 200) : 
+        }
+        this.graphDrawers[id].visible = state ?
+            new AnimationObject(this.graphDrawers[id].visible, 1, 200) :
             new AnimationObject(this.graphDrawers[id].visible, 0, 200);
 
-        setTimeout(() => {this.updateHeight(state);}, 1);
+        setTimeout(() => {
+            this.updateHeight(state);
+        }, 1);
     }
 
     /**
@@ -831,6 +840,7 @@ class ChartDrawer {
      */
     draw() {
         this.clear();
+        if (this.layout) this.drawSelection();
         this.drawGraphs();
         if (this.layout) this.drawLayout();
     }
@@ -851,11 +861,26 @@ class ChartDrawer {
         if (this.graph != undefined) {
             let visibleDrawer = this.graph;
             this.layoutDrawer.draw(
-                visibleDrawer.bounds, 
+                visibleDrawer.bounds,
                 visibleDrawer.maxBounds,
-                this.offsets.bottom,
-                this.selection.date
+                this.offsets.bottom
             );
+        }
+    }
+
+    /**
+     * Draws the selection part of the layout.
+     */
+    drawSelection() {
+        if (this.graph != undefined) {
+            let visibleDrawer = this.graph;
+            if (this.selection.date != null) {
+                this.layoutDrawer.drawSelection(
+                    this.selection.date,
+                    visibleDrawer.bounds,
+                    this.offsets.bottom
+                );
+            }
         }
     }
 }
@@ -888,55 +913,58 @@ class ChartController {
         this.onupdate = () => {};
         /**Callback on changed field selection.*/
         this.onselect = () => {};
-        /**Callback on controller's stop.*/
-        this.onstop = () => {};
         //#endregion
         //#region Events Registration
         leftDragger.onmousedown = (e) => {
-            this.startDrag(e, this, 1)
+            this.startDrag(e, 1)
         };
         leftDragger.ontouchstart = (e) => {
-            this.startDrag(e, this, 1)
+            this.startDrag(e, 1)
         };
         rightDragger.onmousedown = (e) => {
-            this.startDrag(e, this, 2)
+            this.startDrag(e, 2)
         };
         rightDragger.ontouchstart = (e) => {
-            this.startDrag(e, this, 2)
+            this.startDrag(e, 2)
         };
         selector.onmousedown = (e) => {
-            this.startDrag(e, this, 0)
+            this.startDrag(e, 0)
         };
         selector.ontouchstart = (e) => {
-            this.startDrag(e, this, 0)
+            this.startDrag(e, 0)
         };
         field.onmousemove = (e) => {
-            this.select(e, this, true);
+            this.select(e, true);
         };
         field.onmouseleave = (e) => {
-            this.select(e, this, false);
+            this.select(e, false);
         };
         field.ontouchstart = (e) => {
-            this.select(e, this, true);
+            this.select(e, true);
         };
         field.ontouchmove = (e) => {
-            this.select(e, this, true);
+            this.select(e, true);
         };
         field.ontouchend = (e) => {
-            this.select(e, this, false);
+            this.select(e, false);
         };
         //#endregion
 
         console.debug("ChartController created", this);
     }
 
-    select(eventArgs, sender, visible) {
+    /**
+     * Updates current selection state and invokes callback.
+     * @param {Object} eventArgs Event arguments.
+     * @param {Bool} visible Whethe selection is visible now or not.
+     */
+    select(eventArgs, visible) {
         if (!eventArgs.clientX && eventArgs.touches && eventArgs.touches.length > 0) {
             eventArgs.clientX = eventArgs.touches[0].clientX;
         }
         eventArgs.preventDefault();
-        let percent = (eventArgs.clientX - this.field.offsetLeft) 
-            / this.field.clientWidth;
+        let percent = (eventArgs.clientX - this.field.offsetLeft) /
+            this.field.clientWidth;
 
         this.onselect(eventArgs.clientX, percent, visible);
     }
@@ -944,10 +972,9 @@ class ChartController {
     /**
      * Starts element dragging.
      * @param {Object} eventArgs Event arguments.
-     * @param {ChartController} sender Sender element's class.
      * @param {Number} type Type of dragging (0-2).
      */
-    startDrag(eventArgs, sender, type) {
+    startDrag(eventArgs, type) {
         eventArgs = eventArgs || window.event;
         if (!eventArgs.clientX && eventArgs.touches) {
             eventArgs.clientX = eventArgs.touches[0].clientX;
@@ -956,18 +983,18 @@ class ChartController {
         eventArgs.preventDefault();
 
         //Save the old postion and register the events
-        sender.positionOld = eventArgs.clientX;
+        this.positionOld = eventArgs.clientX;
         document.onmouseup = (e) => {
-            sender.stopDrag(sender)
+            this.stopDrag()
         };
         document.ontouchend = (e) => {
-            sender.stopDrag(sender)
+            this.stopDrag()
         };
         document.onmousemove = (e) => {
-            sender.drag(e, sender, type)
+            this.drag(e, type)
         };
         document.ontouchmove = (e) => {
-            sender.drag(e, sender, type)
+            this.drag(e, type)
         };
 
         console.debug("Dragging started.");
@@ -976,10 +1003,9 @@ class ChartController {
     /**
      * Performs element dragging.
      * @param {Object} eventArgs Event arguments.
-     * @param {ChartController} sender Sender element's class.
      * @param {Number} type Type of dragging (0-2).
      */
-    drag(eventArgs, sender, type) {
+    drag(eventArgs, type) {
         console.debug("Dragging...")
         eventArgs = eventArgs || window.event;
         if (!eventArgs.clientX && eventArgs.touches) {
@@ -988,55 +1014,54 @@ class ChartController {
         eventArgs.preventDefault();
 
         //Calculate the new position
-        sender.positionNew = sender.positionOld - eventArgs.clientX;
-        sender.positionOld = eventArgs.clientX;
+        this.positionNew = this.positionOld - eventArgs.clientX;
+        this.positionOld = eventArgs.clientX;
 
         //Set the style
         if (type === 0) {
-            let left = sender.selector.offsetLeft - sender.positionNew;
+            let left = this.selector.offsetLeft - this.positionNew;
             if (left < 0) left = 0;
 
-            sender.selector.style.left = left + "px";
+            this.selector.style.left = left + "px";
         } else if (type === 1) {
-            let width = sender.selector.clientWidth + sender.positionNew;
-            let left = sender.selector.offsetLeft - sender.positionNew;
+            let width = this.selector.clientWidth + this.positionNew;
+            let left = this.selector.offsetLeft - this.positionNew;
 
-            if (width < sender.minWidth) {
-                left += width - sender.minWidth;
-                width = sender.minWidth;
+            if (width < this.minWidth) {
+                left += width - this.minWidth;
+                width = this.minWidth;
             }
             if (left < 0) {
                 width -= -left;
                 left = 0;
             }
 
-            sender.selector.style.left = left + "px";
-            sender.selector.style.width = width + "px";
+            this.selector.style.left = left + "px";
+            this.selector.style.width = width + "px";
         } else if (type === 2) {
-            let width = sender.selector.clientWidth - sender.positionNew;
-            if (width + sender.selector.offsetLeft + sender.borderWidth >
-                sender.selector.parentNode.clientWidth) {
-                width = sender.selector.clientWidth;
+            let width = this.selector.clientWidth - this.positionNew;
+            if (width + this.selector.offsetLeft + this.borderWidth >
+                this.selector.parentNode.clientWidth) {
+                width = this.selector.clientWidth;
             }
 
-            sender.selector.style.width = width + "px";
+            this.selector.style.width = width + "px";
         }
 
-        sender.normalize();
-        sender.update();
+        this.normalize();
+        this.update();
     }
 
     /**
      * Stops element dragging.
      */
-    stopDrag(sender) {
+    stopDrag() {
         //Clear the events
         document.onmouseup = null;
         document.ontouchend = null;
         document.onmousemove = null;
         document.ontouchmove = null;
 
-        sender.onstop();
         console.debug("Dragging stopped.");
     }
 
@@ -1074,6 +1099,12 @@ class ChartController {
 }
 
 class AnimationObject {
+    /**
+     * Creates an object for animating properties.
+     * @param {Number} startProperty Property value at the start of the animation.
+     * @param {Number} endProperty Property value at the end of the animation.
+     * @param {Number} duration How long the animation will be in milliseconds.
+     */
     constructor(startProperty, endProperty = startProperty, duration = 0) {
         this.startTime = Date.now();
         this.duration = duration;
@@ -1081,15 +1112,26 @@ class AnimationObject {
         this.endProperty = endProperty;
     }
 
+    /**
+     * Returns the property value based on the past time.
+     */
     get() {
         let timePast = Date.now() - this.startTime;
         if (timePast > this.duration) return this.endProperty;
-        
+
         return this.startProperty + ((timePast / this.duration) * (this.endProperty - this.startProperty));
     }
 }
 
 class Bounds {
+    /**
+     * Creates an object for storing bounds data. 
+     * Aslo supports AnimationObject as values.
+     * @param {Number} left Left bound.
+     * @param {Number} right Right bound.
+     * @param {Number} top Top bound.
+     * @param {Number} bottom Bottom bound.
+     */
     constructor(left, right, top, bottom) {
         this._left = left;
         this._right = right;
@@ -1186,9 +1228,5 @@ function loadData(url, callback) {
         }
     };
     requestObject.send();
-}
-
-Math.interpolate = (min, max, value) => {
-    return min + (value * (max - min));
 }
 //#endregion
