@@ -55,6 +55,18 @@ body,
     cursor: pointer;
 }
 
+.hint {
+    position: absolute;
+    margin-left: calc(var(--main-margin) / 2);
+    transform: translateY(calc(var(--main-margin) / -2));
+    
+    font-size: 0.5em;
+    color: rgb(var(--color-text));
+
+    opacity: 0.5;
+    user-select: none;
+}
+
 #chart {
     position: relative;
     top: var(--main-margin);
