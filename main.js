@@ -24,10 +24,6 @@ loadData("chart_data.json", (source) => {
         coverRight.style.width = (100 - end) + "%";
         drawer.start = start;
         drawer.end = end;
-        render();
-    };
-    controller.onstop = () => {
-        render();
     };
     controller.onselect = (x, value, visible) => {
         drawer.select = visible? value : undefined;
@@ -45,12 +41,13 @@ loadData("chart_data.json", (source) => {
                 values[i].children[0].innerHTML = drawer.selection.values[i];
             }
         }
-        render();
     };
     controller.update();
 
     previewCanvas.width = previewCanvas.clientWidth * 2;
     previewCanvas.height = previewCanvas.clientHeight * 2;
+    canvas.width = canvas.clientWidth * 2;
+    canvas.height = canvas.clientHeight * 2;
     preview.draw();
 
     document.getElementsByClassName("title")[0].onclick = () => {
@@ -67,9 +64,10 @@ loadData("chart_data.json", (source) => {
         selector.style.width = "0px";
         previewCanvas.width = previewCanvas.clientWidth * 2;
         previewCanvas.height = previewCanvas.clientHeight * 2;
+        canvas.width = canvas.clientWidth * 2;
+        canvas.height = canvas.clientHeight * 2;
         preview.draw();
         controller.update();
-        render();
     };
 
     document.getElementsByClassName("theme-switch")[0].onclick = () => {
@@ -78,16 +76,16 @@ loadData("chart_data.json", (source) => {
     };
 
     function render() {
-        canvas.width = canvas.clientWidth * 2;
-        canvas.height = canvas.clientHeight * 2;
-        drawer.draw(controller.dragging);
+        drawer.draw();
+        preview.draw();
+        requestAnimationFrame(render);
     }
 
     function loadChart(id) {
         let chart = charts[id];
 
         //Create chart drawers
-        drawer = new AnimatedChartDrawer(chart, canvas, {
+        drawer = new ChartDrawer(chart, canvas, {
             left: 0,
             bottom: 48
         });
@@ -119,7 +117,6 @@ loadData("chart_data.json", (source) => {
             tooltipValue.className = "value";
             tooltipName.className = "name";
             tooltipName.innerHTML = chart.graphs[+graphId].name;
-            tooltipValue.innerHTML = 42; ///TEST
             tooltip.style.color = chart.graphs[+graphId].color;
             icon.style.backgroundColor = chart.graphs[+graphId].color;
 
@@ -131,13 +128,17 @@ loadData("chart_data.json", (source) => {
             tooltip.appendChild(tooltipName);
             document.getElementById("values").appendChild(tooltip);
 
-            button.onclick = () => {
+            button.onclick = (e) => {
+                let visibleGraphs = drawer.graphDrawers.reduce((n, x) => {
+                    return n + (x.visible ? 1  : 0);
+                }, 0);
+                
+                if (drawer.graphDrawers[+graphId].visible && visibleGraphs == 1) {
+                    return false;
+                }
+
                 drawer.toggle(+graphId, checkbox.checked);
                 preview.toggle(+graphId, checkbox.checked);
-                render();
-                previewCanvas.width = previewCanvas.clientWidth * 2;
-                previewCanvas.height = previewCanvas.clientHeight * 2;
-                preview.draw();
             }
         }
     }
@@ -151,6 +152,8 @@ loadData("chart_data.json", (source) => {
         else
             document.getElementById("bar").content = "black-translucent";
     }
+
+    render();
 });
 
 //#region Classes
@@ -298,25 +301,48 @@ class GraphDrawer {
         /**The graph to draw.*/
         this.graph = graph;
         /**Maximum drawing bounds.*/
-        this.maxBounds = {
-            left: +Object.keys(graph.values)[0],
-            right: +Object.keys(graph.values)[Object.keys(graph.values).length - 1],
-            top: +Math.max.apply(Math, Object.values(graph.values)),
-            bottom: Math.min(0, +Math.min.apply(Math, Object.values(graph.values)))
-        }
+        this.maxBounds = new Bounds(
+            +Object.keys(graph.values)[0],
+            +Object.keys(graph.values)[Object.keys(graph.values).length - 1],
+            +Math.max.apply(Math, Object.values(graph.values)),
+            Math.min(0, +Math.min.apply(Math, Object.values(graph.values)))
+        );
         /**Current drawing bound.*/
-        this.bounds = Object.assign({}, this.maxBounds);
+        this.bounds = this.maxBounds.clone();
         /**Graph offsets (used to create space for the legend)*/
         this.offsets = offsets;
         /**Drawing canvas.*/
         this.canvas = canvas
         /**Whether the graph is visible or not.*/
-        this.visible = true;
+        this._visible = 1;
         /**Drawing context.*/
         this.context = canvas.getContext("2d");
         //#endregion
 
         console.debug("GraphDrawer created", this);
+    }
+
+    set visible(value) {
+        if (value === true) value = 1;
+        if (value === false) value = 0;
+
+        this._visible = value;
+    }
+
+    get visible() {
+        if (this._visible instanceof AnimationObject) {
+            return !(this._visible.get() == 0);
+        } else {
+            return !(this._visible == 0);
+        }
+    }
+
+    get visibility() {
+        if (this._visible instanceof AnimationObject) {
+            return this._visible.get();
+        } else {
+            return this._visible? 1 : 0;
+        }
     }
 
     /**
@@ -353,7 +379,7 @@ class GraphDrawer {
     /**
      * Draws the graph depending on current settings.
      */
-    draw(lineWidth = 2.5) {
+    draw(selection, lineWidth = 2.5) {
         if (!this.visible) return;
         //Set color
         this.context.strokeStyle = this.graph.color;
@@ -363,7 +389,7 @@ class GraphDrawer {
         widthRatio *= (this.maxBounds.right - this.maxBounds.left) / (this.bounds.right - this.bounds.left);
         //Start drawing
         this.context.beginPath();
-        let firstPoint;
+        let firstPoint, previousPoint;
 
         for (const x in this.graph.values) {
             const y = this.graph.values[x];
@@ -388,13 +414,34 @@ class GraphDrawer {
             let dy = (y - this.bounds.bottom) * heightRatio;
 
             this.context.lineTo(dx, this.view.height - dy);
-            //console.debug("Draw to", dx, dy); ///DEBUG!
 
+            if (previousPoint == selection) {
+                this.context.globalAlpha = this.visibility;
+                this.context.stroke();
+
+                this.context.fillStyle = "rgb(" +
+                    window.getComputedStyle(document.getElementsByClassName("page")[0])
+                    .getPropertyValue("--color-background").trim() + ")";;
+                this.context.beginPath();
+                const dx0 = (previousPoint - this.bounds.left) * widthRatio + this.offsets.left;
+                const dy0 = (this.graph.values[previousPoint] - this.bounds.bottom) * heightRatio;
+                this.context.arc(dx0, this.view.height - dy0, this.view.height / 50, 0, 2 * Math.PI);
+                this.context.fill();
+                this.context.stroke();
+                this.context.globalAlpha = 1;
+
+                this.context.beginPath();
+                this.context.moveTo(dx, this.view.height - dy);
+            }
+
+            previousPoint = x;
             if (x > this.bounds.right)
                 break;
         }
 
+        this.context.globalAlpha = this.visibility;
         this.context.stroke();
+        this.context.globalAlpha = 1;
     }
 }
 
@@ -446,7 +493,7 @@ class LayoutDrawer {
             window.getComputedStyle(document.getElementsByClassName("page")[0])
             .getPropertyValue("--color-text").trim() + ", 0.5)";
 
-        this.drawLines(bounds, bottom);
+        this.drawLines(bounds, maxBounds, bottom);
         if (selection != null) {
             this.drawSelection(selection, bounds, bottom);
         }
@@ -463,10 +510,16 @@ class LayoutDrawer {
      * @param {Object} bounds Graph drawer current bounds.
      * @param {Number} bottom Margin from the bottom (for dates).
      */
-    drawLines(bounds, bottom) {
-        let spacing = this.view.height / this.lineCount;
-        let margin = 6;
-        let area = (bounds.top - bounds.bottom) / this.lineCount;
+    drawLines(bounds, maxBounds, bottom) {
+        const top = maxBounds.top - bounds.top;
+        const size = (bounds.top - bounds.bottom);
+        const maxSize = (maxBounds.top - maxBounds.bottom);
+        const zoom = size / maxSize;
+        const ratio = size / (this.view.height - bottom);
+
+        const spacing = (this.view.height - bottom) / this.lineCount;
+        const margin = 6;
+        const area = (bounds.top - bounds.bottom) / this.lineCount;
 
         this.context.strokeStyle = this.textColor;
         this.context.fillStyle = this.textColor;
@@ -474,15 +527,19 @@ class LayoutDrawer {
         this.context.font = (spacing / 4) + "px " +
             window.getComputedStyle(document.getElementsByClassName("page")[0])["font-family"];
 
+        const offset = ((top * zoom) % area) / ratio;
         bottom += this.context.lineWidth;
         for (let i = 0; i < this.lineCount; i++) {
             let y = this.view.height - bottom - spacing * i;
+            if (i != 0)
+                y -= offset;
+
             this.context.beginPath();
             this.context.moveTo(0, y);
             this.context.lineTo(this.view.width, y);
             this.context.stroke();
 
-            let label = Math.round(bounds.bottom + area * i);
+            let label = Math.round((this.view.height - y - bottom) * ratio);
             this.context.fillText(label, 0, y - margin);
             if (i == 0)
                 this.context.strokeStyle = this.lineColor;
@@ -541,7 +598,6 @@ class LayoutDrawer {
 
             this.drawDate(bounds, ratio, margin, x);
         }
-        console.debug("Scale: ", scale);
     }
 
     /**
@@ -569,7 +625,6 @@ class LayoutDrawer {
         const size = (bounds.right - bounds.left);
         const ratio = size / this.view.width;
         let x = (date - bounds.left) / ratio;
-        console.debug(x);
 
         this.context.strokeStyle = this.textColor;
         this.context.lineWidth = 1;
@@ -723,23 +778,25 @@ class ChartDrawer {
      */
     toggle(id, state = undefined) {
         if (state == undefined) {
-            this.graphDrawers[id].visible = !this.graphDrawers[id].visible;
-        } else {
-            this.graphDrawers[id].visible = state;
-        }
+            state = (!this.graphDrawers[id].visible);
+        } 
+        this.graphDrawers[id].visible = state ? 
+            new AnimationObject(this.graphDrawers[id].visible, 1, 200) : 
+            new AnimationObject(this.graphDrawers[id].visible, 0, 200);
 
-        this.updateHeight();
+        setTimeout(() => {this.updateHeight(state);}, 1);
     }
 
     /**
      * Updates viewport height.
      */
-    updateHeight() {
+    updateHeight(state = false) {
         let top = -Number.MAX_SAFE_INTEGER;
 
         //Calculate max points
         for (const drawer of this.graphDrawers) {
-            if (!drawer.visible) continue;
+            if (drawer.visibility != 1 && !state) continue;
+            if (drawer.visibility == 0 && state) continue;
 
             if (this.autoHeight) {
                 let maximum = drawer.localMaximum;
@@ -752,8 +809,7 @@ class ChartDrawer {
 
         //Setup top bounds
         for (const drawer of this.graphDrawers) {
-            if (!drawer.visible) continue;
-            drawer.bounds.top = top;
+            drawer.bounds.top = new AnimationObject(drawer.bounds.top, top, 200);
         }
     }
 
@@ -767,19 +823,11 @@ class ChartDrawer {
     }
 
     /**
-     * Draws selction line;
-     * @param {Number} percent The percentage of selected point.
-     */
-    drawSelection(percent) {
-
-    }
-
-    /**
      * Draws the graphs of the chart.
      */
     drawGraphs() {
         for (const drawer of this.graphDrawers) {
-            drawer.draw(this.lineWidth);
+            drawer.draw(this.selection.date, this.lineWidth);
         }
     }
 
@@ -796,84 +844,6 @@ class ChartDrawer {
                 this.selection.date
             );
         }
-    }
-}
-
-class AnimatedChartDrawer extends ChartDrawer {
-    constructor(chart, canvas, offsets = {
-        left: 0,
-        bottom: 0
-    }) {
-        super(chart, canvas, offsets);
-        //#region Properties
-        this.topEnd = null;
-        this.animationDuration = 200;
-        this.animation;
-        //#endregion
-    }
-
-    /**
-     * Draws all charts.
-     */
-    draw(preventAnimation = false) {
-        console.debug("Dragging:", preventAnimation);
-        if (this.topEnd == null || preventAnimation) {
-            super.draw();
-            return;
-        }
-
-        let interval = 25;
-        let steps = Math.ceil(this.animationDuration / interval);
-        let i = 0;
-        super.draw();
-        clearInterval(this.animation);
-        this.animation = setInterval(() => {
-            //Setup top bounds
-            for (const drawer of this.graphDrawers) {
-                if (!drawer.visible) continue;
-                let step = (this.topEnd - drawer.topStart) / steps;
-                drawer.bounds.top += step;
-                if (i >= steps) {
-                    drawer.bounds.top = this.topEnd;
-                }
-            }
-            //Draw the result
-            super.draw();
-
-            if (i >= steps) {
-                clearInterval(this.animation);
-                this.topEnd = null;
-                this.topStart = null;
-            } else {
-                i++;
-            }
-        }, interval);
-    }
-
-    /**
-     * Updates viewport height.
-     */
-    updateHeight() {
-        let top = -Number.MAX_SAFE_INTEGER;
-
-        //Calculate max points
-        for (const drawer of this.graphDrawers) {
-            if (!drawer.visible) continue;
-
-            if (this.autoHeight) {
-                let maximum = drawer.localMaximum;
-                if (maximum > top)
-                    top = maximum;
-            } else if (drawer.maxBounds.top > top) {
-                top = drawer.maxBounds.top;
-            }
-
-            drawer.topStart = drawer.bounds.top;
-        }
-
-        //Save top bounds
-        console.debug("Goal:", top);
-        this.topEnd = top;
     }
 }
 
@@ -1087,6 +1057,92 @@ class ChartController {
     get dragging() {
         return !(document.onmouseup == null && document.ontouchend == null &&
             document.onmousemove == null && document.ontouchmove == null);
+    }
+}
+
+class AnimationObject {
+    constructor(startProperty, endProperty = startProperty, duration = 0) {
+        this.startTime = Date.now();
+        this.duration = duration;
+        this.startProperty = startProperty;
+        this.endProperty = endProperty;
+    }
+
+    get() {
+        let timePast = Date.now() - this.startTime;
+        if (timePast > this.duration) return this.endProperty;
+        
+        return this.startProperty + ((timePast / this.duration) * (this.endProperty - this.startProperty));
+    }
+}
+
+class Bounds {
+    constructor(left, right, top, bottom) {
+        this._left = left;
+        this._right = right;
+        this._top = top;
+        this._bottom = bottom;
+    }
+
+    /**Left bound.*/
+    get left() {
+        if (this._left instanceof AnimationObject) {
+            return this._left.get();
+        } else {
+            return this._left;
+        }
+    }
+
+    /**Left bound.*/
+    set left(value) {
+        this._left = value;
+    }
+
+    /**Right bound.*/
+    get right() {
+        if (this._right instanceof AnimationObject) {
+            return this._right.get();
+        } else {
+            return this._right;
+        }
+    }
+
+    /**Right bound.*/
+    set right(value) {
+        this._right = value;
+    }
+
+    /**Top bound.*/
+    get top() {
+        if (this._top instanceof AnimationObject) {
+            return this._top.get();
+        } else {
+            return this._top;
+        }
+    }
+
+    /**Top bound.*/
+    set top(value) {
+        this._top = value;
+    }
+
+    /**Bottom bound.*/
+    get bottom() {
+        if (this._bottom instanceof AnimationObject) {
+            return this._bottom.get();
+        } else {
+            return this._bottom;
+        }
+    }
+
+    /**Bottom bound.*/
+    set bottom(value) {
+        this._bottom = value;
+    }
+
+    /**Returns the cloned object*/
+    clone() {
+        return new Bounds(this.left, this.right, this.top, this.bottom);
     }
 }
 //#endregion
