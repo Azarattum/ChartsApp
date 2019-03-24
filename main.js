@@ -30,6 +30,14 @@ loadData("chart_data.json", (source) => {
         drawer.select = visible ? value : undefined;
         let tooltip = document.getElementById("tooltip");
         tooltip.style.left = (x - tooltip.clientWidth / 3) + "px";
+        if (parseInt(tooltip.style.left) < 0) {
+            tooltip.style.left = "0px";
+        }
+        if (parseInt(tooltip.style.left) >=
+            (tooltip.parentNode.clientWidth - tooltip.clientWidth)) {
+            tooltip.style.left = (tooltip.parentNode.clientWidth - tooltip.clientWidth) + "px";
+        }
+
         tooltip.style.opacity = visible ? "1" : "0";
 
         if (visible) {
@@ -61,6 +69,7 @@ loadData("chart_data.json", (source) => {
     };
 
     window.onresize = () => {
+        document.getElementById("tooltip").style.left = "0px";
         selector.style.left = "0px";
         selector.style.width = "0px";
         previewCanvas.width = previewCanvas.clientWidth * 2;
