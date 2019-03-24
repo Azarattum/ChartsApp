@@ -29,14 +29,19 @@ loadData("chart_data.json", (source) => {
     controller.onselect = (x, value, visible) => {
         drawer.select = visible ? value : undefined;
         let tooltip = document.getElementById("tooltip");
-        tooltip.style.left = (x - tooltip.clientWidth / 3) + "px";
-        if (parseInt(tooltip.style.left) < 0) {
-            tooltip.style.left = "0px";
+        let left = (x - tooltip.clientWidth / 3) + "px";
+        if (parseInt(left) < 0) {
+            left = "0px";
         }
-        if (parseInt(tooltip.style.left) >=
-            (tooltip.parentNode.clientWidth - tooltip.clientWidth)) {
-            tooltip.style.left = (tooltip.parentNode.clientWidth - tooltip.clientWidth) + "px";
+        if (parseInt(left) >=
+            (tooltip.parentNode.clientWidth - tooltip.clientWidth -
+                parseInt(window.getComputedStyle(document.getElementsByClassName("page")[0])
+                    .getPropertyValue("--main-margin")))) {
+            left = (tooltip.parentNode.clientWidth - tooltip.clientWidth -
+                parseInt(window.getComputedStyle(document.getElementsByClassName("page")[0])
+                    .getPropertyValue("--main-margin"))) + "px";
         }
+        tooltip.style.left = left;
 
         tooltip.style.opacity = visible ? "1" : "0";
 
@@ -151,6 +156,8 @@ loadData("chart_data.json", (source) => {
                 preview.toggle(+graphId, checkbox.checked);
             }
         }
+
+        preview.updateHeight();
     }
 
     function moibleStyle() {
