@@ -18,16 +18,33 @@ loadData("chart_data.json", (source) => {
     moibleStyle();
 
     //Create controller
-    let controller = new ChartController(selector, leftDragger, rightDragger);
+    let controller = new ChartController(selector, leftDragger, rightDragger, canvas);
     controller.onupdate = (start, end) => {
         coverLeft.style.width = start + "%";
         coverRight.style.width = (100 - end) + "%";
         drawer.start = start;
         drawer.end = end;
-        //drawer.layoutDrawer.dateCount = Math.round(Math.interpolate(5, 7, 1 - (end - start) / 100));
         render();
     };
     controller.onstop = () => {
+        render();
+    };
+    controller.onselect = (x, value, visible) => {
+        drawer.select = visible? value : undefined;
+        let tooltip = document.getElementById("tooltip");
+        tooltip.style.left = (x - tooltip.clientWidth / 3) + "px";
+        tooltip.style.opacity = visible? "1" : "0";
+
+        if (visible) {
+            let date = new Date(+drawer.selection.date).toString();
+            date = date.split(" ")[0] + ", " + date.split(" ")[1] + " " + date.split(" ")[2];
+            document.getElementById("date").innerHTML = date;
+            let values = document.getElementById("values").children;
+            for (let i = 0; i < values.length; i++) {
+                values[i].style.display = drawer.graphDrawers[i].visible? "block" : "none";
+                values[i].children[0].innerHTML = drawer.selection.values[i];
+            }
+        }
         render();
     };
     controller.update();
@@ -84,22 +101,35 @@ loadData("chart_data.json", (source) => {
         //Update chart buttons
         let graphs = document.getElementsByClassName("graphs")[0];
         graphs.innerHTML = "";
+        document.getElementById("values").innerHTML = "";
         for (const graphId in chart.graphs) {
             let button = document.createElement("label");
             let checkbox = document.createElement("input");
             let icon = document.createElement("div");
             let name = document.createTextNode(chart.graphs[+graphId].name);
+            let tooltip = document.createElement("div");
+            let tooltipValue = document.createElement("div");
+            let tooltipName = document.createElement("div");
 
             button.className = "button";
             checkbox.type = "checkbox";
             checkbox.checked = true;
             icon.className = "icon";
+            tooltip.className = "graph-value";
+            tooltipValue.className = "value";
+            tooltipName.className = "name";
+            tooltipName.innerHTML = chart.graphs[+graphId].name;
+            tooltipValue.innerHTML = 42; ///TEST
+            tooltip.style.color = chart.graphs[+graphId].color;
             icon.style.backgroundColor = chart.graphs[+graphId].color;
 
             button.appendChild(checkbox);
             button.appendChild(icon);
             button.appendChild(name);
             graphs.appendChild(button);
+            tooltip.appendChild(tooltipValue);
+            tooltip.appendChild(tooltipName);
+            document.getElementById("values").appendChild(tooltip);
 
             button.onclick = () => {
                 drawer.toggle(+graphId, checkbox.checked);
@@ -407,7 +437,7 @@ class LayoutDrawer {
      * @param {Object} bounds Graph drawer current bounds.
      * @param {Number} bottom Margin from the bottom (for dates).
      */
-    draw(bounds, maxBounds, bottom) {
+    draw(bounds, maxBounds, bottom, selection) {
         //Update colors
         this.lineColor = "rgba(" +
             window.getComputedStyle(document.getElementsByClassName("page")[0])
@@ -417,6 +447,9 @@ class LayoutDrawer {
             .getPropertyValue("--color-text").trim() + ", 0.5)";
 
         this.drawLines(bounds, bottom);
+        if (selection != null) {
+            this.drawSelection(selection, bounds, bottom);
+        }
 
         this.context.fillStyle = this.textColor;
         this.context.font = (bottom / 2) + "px " +
@@ -500,7 +533,7 @@ class LayoutDrawer {
                 }
             }
 
-            while (x / scale < (-bottom * 1.5)) {
+            while (x / scale < (-bottom * 3)) {
                 x += spacing * (this.dateCount * scale * 2);
             }
 
@@ -524,6 +557,27 @@ class LayoutDrawer {
             (new Date(label)).toString().split(' ')[2];
 
         this.context.fillText(label, x, this.view.height + margin);
+    }
+
+    /**
+     * Draws the selection line
+     * @param {Number} x Date of line coordinate.
+     * @param {Object} bounds Graph drawer current bounds.
+     * @param {Number} bottom Margin from the bottom (for dates).
+     */
+    drawSelection(date, bounds, bottom) {
+        const size = (bounds.right - bounds.left);
+        const ratio = size / this.view.width;
+        let x = (date - bounds.left) / ratio;
+        console.debug(x);
+
+        this.context.strokeStyle = this.textColor;
+        this.context.lineWidth = 1;
+
+        this.context.beginPath();
+        this.context.moveTo(x, 0);
+        this.context.lineTo(x, this.view.height - bottom);
+        this.context.stroke();
     }
 }
 
@@ -557,6 +611,8 @@ class ChartDrawer {
         this.lineWidth = 2.5;
         /**The user defined offsets.*/
         this.offsets = offsets;
+        /**The selection.*/
+        this.selection = {date: null, values: []};
         //#endregion
 
         //Initilizing graph drawers
@@ -622,6 +678,45 @@ class ChartDrawer {
     }
 
     /**
+     * Sets the postion of selection line.
+     * @param {Number} percent The percentage of selected point.
+     */
+    set select(percent) {
+        if (percent == undefined) {
+            this.selection.date = null;
+        }
+        if (this.graph != undefined) {
+            const visibleGraph = this.graph;
+            const size = visibleGraph.bounds.right - visibleGraph.bounds.left;
+            const position = visibleGraph.bounds.left + (size * percent);
+            
+            this.selection.values = [];
+            for (const drawer of this.graphDrawers) {
+                if (!drawer.visible) {
+                    this.selection.values.push(undefined);
+                    continue;
+                }
+
+                let value = Number.MAX_SAFE_INTEGER;
+                for (const x in drawer.graph.values) {
+                    if (Math.abs(x - position) < value) {
+                        value = Math.abs(x - position);
+                        this.selection.date = x;
+                    }
+                }
+                this.selection.values.push(drawer.graph.values[this.selection.date]);
+            }
+        }
+    }
+
+    /**
+     * Returns the first visible graph.
+     */
+    get graph() {
+        return this.graphDrawers.find(x => x.visible)
+    }
+
+    /**
      * Toggles or sets graph's visibility state by id.
      * @param {Number} id Graph id.
      * @param {Boolean} state Visibility state.
@@ -672,6 +767,14 @@ class ChartDrawer {
     }
 
     /**
+     * Draws selction line;
+     * @param {Number} percent The percentage of selected point.
+     */
+    drawSelection(percent) {
+
+    }
+
+    /**
      * Draws the graphs of the chart.
      */
     drawGraphs() {
@@ -684,9 +787,14 @@ class ChartDrawer {
      * Draws the layout for the chart.
      */
     drawLayout() {
-        if (this.graphDrawers.some(x => x.visible)) {
-            let visibleDrawer = this.graphDrawers.find(x => x.visible);
-            this.layoutDrawer.draw(visibleDrawer.bounds, visibleDrawer.maxBounds, this.offsets.bottom);
+        if (this.graph != undefined) {
+            let visibleDrawer = this.graph;
+            this.layoutDrawer.draw(
+                visibleDrawer.bounds, 
+                visibleDrawer.maxBounds,
+                this.offsets.bottom,
+                this.selection.date
+            );
         }
     }
 }
@@ -777,10 +885,12 @@ class ChartController {
      * @param {Element} rightDragger Area right side dragger element.
      * @param {Function} onupdate Callback on controller's update.
      */
-    constructor(selector, leftDragger, rightDragger) {
+    constructor(selector, leftDragger, rightDragger, field) {
         //#region Properties
         /**Chart area selector element.*/
         this.selector = selector;
+        /**Chart drawing element.*/
+        this.field = field;
         /**Border width style of the selector element.*/
         this.borderWidth = parseInt(window.getComputedStyle(selector)["border-left-width"]) * 2;
         /**Minimum width style of the selector element.*/
@@ -793,6 +903,8 @@ class ChartController {
         this.positionNew = 0;
         /**Callback on controller's update.*/
         this.onupdate = () => {};
+        /**Callback on changed field selection.*/
+        this.onselect = () => {};
         /**Callback on controller's stop.*/
         this.onstop = () => {};
         //#endregion
@@ -815,9 +927,35 @@ class ChartController {
         selector.ontouchstart = (e) => {
             this.startDrag(e, this, 0)
         };
+        field.onmousemove = (e) => {
+            this.select(e, this, true);
+        };
+        field.onmouseleave = (e) => {
+            this.select(e, this, false);
+        };
+        field.ontouchstart = (e) => {
+            this.select(e, this, true);
+        };
+        field.ontouchmove = (e) => {
+            this.select(e, this, true);
+        };
+        field.ontouchend = (e) => {
+            this.select(e, this, false);
+        };
         //#endregion
 
         console.debug("ChartController created", this);
+    }
+
+    select(eventArgs, sender, visible) {
+        if (!eventArgs.clientX && eventArgs.touches && eventArgs.touches.length > 0) {
+            eventArgs.clientX = eventArgs.touches[0].clientX;
+        }
+        eventArgs.preventDefault();
+        let percent = (eventArgs.clientX - this.field.offsetLeft) 
+            / this.field.clientWidth;
+
+        this.onselect(eventArgs.clientX, percent, visible);
     }
 
     /**
