@@ -86,7 +86,6 @@ loadData("chart_data.json", (source) => {
     };
 
     document.getElementsByClassName("theme-switch")[0].onclick = () => {
-        setTimeout(render, 1);
         setTimeout(moibleStyle, 2);
     };
 
