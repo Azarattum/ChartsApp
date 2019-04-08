@@ -22,11 +22,37 @@ load({
 
     /*===================TESTS!===================*/
     chart = new Chart(data["chart"]);
-    let vertices = Path.getVertices(chart.graphs[0].vertices, 1.5, gl.viewport);
+    let viewport = {
+        width:gl.viewport.width,
+        height:gl.viewport.height
+    };
+    let vertices = Path.getVertices(chart.graphs[0].vertices, 4, viewport);
+
+    /*gl.attribute.position = vertices;
+    gl.uniform.alpha = 0.5;
+    gl.drawTriangles(vertices.length / 2);*/
+
+    vertices = [];
+    for (const vertex of chart.graphs[0].vertices) {
+        vertices.push(vertex.x);
+        vertices.push(vertex.y);
+    }
+    console.log(chart.graphs[0].vertices);
 
     gl.attribute.position = vertices;
     gl.uniform.alpha = 1.0;
-    gl.drawTriangles(vertices.length / 2);
+    gl.drawStrip(vertices.length / 2);
+
+    vertices = [];
+    for (const vertex of chart.graphs[0].vertices) {
+        vertices.push(vertex.x);
+        vertices.push(vertex.y - 2 / canvas.height);
+    }
+    console.log(chart.graphs[0].vertices);
+
+    gl.attribute.position = vertices;
+    gl.uniform.alpha = 1.0;
+    gl.drawStrip(vertices.length / 2);
 });
 
 /**

@@ -116,19 +116,23 @@ class Path {
     static getVertices(points, width, viewport) {
         let vertices = [];
         for (let i = 1; i < points.length - 1; i++) {
-            if (i == 1) {
-                points[i - 1].x = (points[i - 1].x + 1) / 2 * viewport.width;
-                points[i - 1].y = (points[i - 1].y + 1) / 2 * viewport.height;
-                points[i].x = (points[i].x + 1) / 2 * viewport.width;
-                points[i].y = (points[i].y + 1) / 2 * viewport.height;
-            }
-            points[i + 1].x = (points[i + 1].x + 1) / 2 * viewport.width;
-            points[i + 1].y = (points[i + 1].y + 1) / 2 * viewport.height;
+            let point1 = new Point(
+                (points[i - 1].x + 1) / 2 * viewport.width,
+                (points[i - 1].y + 1) / 2 * viewport.height
+            );
+            let point2 = new Point(
+                (points[i].x + 1) / 2 * viewport.width,
+                (points[i].y + 1) / 2 * viewport.height
+            );
+            let point3 = new Point(
+                (points[i + 1].x + 1) / 2 * viewport.width,
+                (points[i + 1].y + 1) / 2 * viewport.height
+            );
 
             let triangles = this.getTriangles(
-                points[i - 1], 
-                points[i], 
-                points[i + 1], 
+                point1, 
+                point2, 
+                point3, 
                 width,
                 i == 1
             );
