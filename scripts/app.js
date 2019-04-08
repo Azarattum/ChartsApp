@@ -22,22 +22,7 @@ load({
 
     /*===================TESTS!===================*/
     chart = new Chart(data["chart"]);
-    let points = chart.graphs[0].points.map((point) => {
-        return new Point(
-            (point.x - chart.graphs[0].minX) / chart.graphs[0].size.x * canvas.width,
-            (point.y - chart.graphs[0].minY) / chart.graphs[0].size.y * canvas.height
-        );
-    });
-    let vertices = Path.getVertices(points, 2);
-    vertices = vertices.map((p, i) => {
-        if (i % 2 == 0) {
-            return p / canvas.width * 2 - 1;
-        } else {
-            return p / canvas.height * 2 - 1;
-        }
-    });
-
-    console.log(points);
+    let vertices = Path.getVertices(chart.graphs[0].vertices, 1.5, gl.viewport);
 
     gl.attribute.position = vertices;
     gl.uniform.alpha = 1.0;

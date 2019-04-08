@@ -64,6 +64,16 @@ class Path {
                 vertices.push(point2.subtract(t0));
             }
 
+            if (((anchorLength / width) | 0) < 10 && intersectionPoint) {
+                vertices.push(point2.add(t0));
+                vertices.push(point2);
+                vertices.push(intersectionPoint);
+
+                vertices.push(point2.add(t1));
+                vertices.push(point2);
+                vertices.push(intersectionPoint);
+            }
+
             vertices.push(point3.add(t1));
             vertices.push(point2.subtract(t1));
             vertices.push(point2.add(t1));
@@ -86,7 +96,7 @@ class Path {
             vertices.push(point2.add(t1));
             vertices.push(point2.subtract(anchor));
 
-            if ((anchorLength / width) | 0) {
+            if (((anchorLength / width) | 0) >= 10) {
                 vertices.push(intersectionPoint);
                 vertices.push(point2.add(t0));
                 vertices.push(point2.add(t1));
@@ -103,9 +113,18 @@ class Path {
         return vertices;
     }
 
-    static getVertices(points, width) {
+    static getVertices(points, width, viewport) {
         let vertices = [];
         for (let i = 1; i < points.length - 1; i++) {
+            if (i == 1) {
+                points[i - 1].x = (points[i - 1].x + 1) / 2 * viewport.width;
+                points[i - 1].y = (points[i - 1].y + 1) / 2 * viewport.height;
+                points[i].x = (points[i].x + 1) / 2 * viewport.width;
+                points[i].y = (points[i].y + 1) / 2 * viewport.height;
+            }
+            points[i + 1].x = (points[i + 1].x + 1) / 2 * viewport.width;
+            points[i + 1].y = (points[i + 1].y + 1) / 2 * viewport.height;
+
             let triangles = this.getTriangles(
                 points[i - 1], 
                 points[i], 
@@ -115,8 +134,8 @@ class Path {
             );
             
             for (const vertex of triangles) {
-                vertices.push(vertex.x);
-                vertices.push(vertex.y);
+                vertices.push(vertex.x / viewport.width * 2 - 1);
+                vertices.push(vertex.y / viewport.height * 2 - 1);
             }
         }
 

@@ -74,7 +74,7 @@ class GL {
         this.gl.blendFuncSeparate(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA,
             this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA);
 
-        this.resize(canvas.clientWidth, canvas.clientHeight);
+        this.resize();
     }
 
     set background(color) {
@@ -82,10 +82,14 @@ class GL {
         this.gl.clearColor(color[0], color[1], color[2], color[3]);
     }
 
-    resize(width, height) {
-        this.canvas.width = width * window.devicePixelRatio;
-        this.canvas.height = height * window.devicePixelRatio;
-        this.gl.viewport(0, 0, width * window.devicePixelRatio, height * window.devicePixelRatio);
+    resize(width = this.canvas.clientWidth, height = this.canvas.clientHeight) {
+        this.viewport = {
+            width: width * window.devicePixelRatio,
+            height: height * window.devicePixelRatio
+        }
+        this.canvas.width = this.viewport.width;
+        this.canvas.height = this.viewport.height;
+        this.gl.viewport(0, 0, this.viewport.width, this.viewport.height);
     }
 
     clear() {
