@@ -22,17 +22,49 @@ load({
 
     /*===================TESTS!===================*/
     chart = new Chart(data["chart"]);
-    let viewport = {
-        width:gl.viewport.width,
-        height:gl.viewport.height
-    };
-    let vertices = Path.getVertices(chart.graphs[0].vertices, 4, viewport);
+    
+    let sq = [
+        new Point(0, -1),
+        new Point(0, 0),
+        new Point(-0.8,-0.8),
+        new Point(-0.5,0.5),
+        new Point(0.5,0.5),
+        new Point(0.5,-0.5)
+    ];
+    let mat = [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ];
+    let proj =  [
+        2 / canvas.width, 0, 0, 0,
+        0, -2 / canvas.height, 0, 0,
+        0, 0, 2 / 1, 0,
+       -1, 1, 0, 1,
+     ];
+    let path = new Path(sq);
+    const count = path.length;
+
+    gl.indices = path.indices;
+
+    gl.attributes.position = path.vertices;
+    gl.attributes.normal = path.normals;
+    gl.attributes.miter = path.miters;
+
+    gl.uniforms.view = proj;
+    gl.uniforms.thickness = 0.2;
+    gl.uniforms.inner = 0;
+    gl.uniforms.window = [canvas.width, canvas.height];
+    gl.drawElements(count);
+
+    console.log(path);
 
     /*gl.attribute.position = vertices;
     gl.uniform.alpha = 0.5;
     gl.drawTriangles(vertices.length / 2);*/
 
-    vertices = [];
+    /*vertices = [];
     for (const vertex of chart.graphs[0].vertices) {
         vertices.push(vertex.x);
         vertices.push(vertex.y);
@@ -52,7 +84,7 @@ load({
 
     gl.attribute.position = vertices;
     gl.uniform.alpha = 1.0;
-    gl.drawStrip(vertices.length / 2);
+    gl.drawStrip(vertices.length / 2);*/
 });
 
 /**

@@ -21,10 +21,10 @@ class GL {
             premultipliedAlpha: false
         });
 
-        this.attributes = [];
-        this.attribute = new Proxy(this.attributes, {
+        this.attributeBuffer = [];
+        this.attributes = new Proxy(this.attributeBuffer, {
             set: (obj, name, value) => {
-                let attribute = this.attributes.find(x => x.name == name);
+                let attribute = this.attributeBuffer.find(x => x.name == name);
                 let type = this.program.attributes[name];
                 if (type == undefined) {
                     console.warn(new Error("Attribute " + name + " does not exist in shader program!"));
@@ -33,20 +33,20 @@ class GL {
                 if (attribute != undefined) {
                     attribute.update(value);
                 } else {
-                    this.attributes.push(new Attrubute(this.gl, program.program, type, name, value));
+                    this.attributeBuffer.push(new Attrubute(this.gl, program.program, type, name, value));
                 }
             },
             get: (obj, name) => {
-                let attribute = this.attributes.find(x => x.name == name);
+                let attribute = this.attributeBuffer.find(x => x.name == name);
                 if (attribute == undefined) return undefined;
                 return attribute.value;
             }
         });
 
-        this.uniforms = [];
-        this.uniform = new Proxy(this.uniforms, {
+        this.uniformBuffer = [];
+        this.uniforms = new Proxy(this.uniformBuffer, {
             set: (obj, name, value) => {
-                let uniform = this.uniforms.find(x => x.name == name);
+                let uniform = this.uniformBuffer.find(x => x.name == name);
                 let type = this.program.uniforms[name];
                 if (type == undefined) {
                     console.warn(new Error("Uniform " + name + " does not exist in shader program!"));
@@ -55,15 +55,17 @@ class GL {
                 if (uniform != undefined) {
                     uniform.update(value);
                 } else {
-                    this.uniforms.push(new Uniform(this.gl, program.program, type, name, value));
+                    this.uniformBuffer.push(new Uniform(this.gl, program.program, type, name, value));
                 }
             },
             get: (obj, name) => {
-                let uniform = this.uniforms.find(x => x.name == name);
+                let uniform = this.uniformBuffer.find(x => x.name == name);
                 if (uniform == undefined) return undefined;
                 return uniform.value;
             }
         });
+
+        this.indexBuffer = null;
 
         this.program = program;
         this.program.attach(this.gl);
@@ -71,6 +73,8 @@ class GL {
 
         this.gl.clearColor(0., 0., 0., 0.);
         this.gl.enable(this.gl.BLEND);
+        this.gl.disable(this.gl.DEPTH_TEST)
+        this.gl.disable(this.gl.CULL_FACE)
         this.gl.blendFuncSeparate(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA,
             this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA);
 
@@ -80,6 +84,19 @@ class GL {
     set background(color) {
         color = color.toArray();
         this.gl.clearColor(color[0], color[1], color[2], color[3]);
+    }
+
+    set indices(indices) {
+        if (this.indexBuffer == null) {
+            this.indexBuffer = this.gl.createBuffer();
+            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+        }
+
+        if (!(indices instanceof Uint16Array)) {
+            indices = new Uint16Array(indices);
+        }
+
+        this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, indices, this.gl.STATIC_DRAW);
     }
 
     resize(width = this.canvas.clientWidth, height = this.canvas.clientHeight) {
@@ -104,9 +121,16 @@ class GL {
         this.gl.drawArrays(this.gl.TRIANGLES, offset, count - offset);
     }
 
+    drawPoints(count, offset = 0) {
+        this.gl.drawArrays(this.gl.POINTS, offset, count - offset);
+    }
+
     drawShape(count, offset = 0) {
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, offset, count - offset);
-        let gl = this.gl;
+    }
+
+    drawElements(count, offset = 0) {
+        this.gl.drawElements(this.gl.TRIANGLES, count - offset, this.gl.UNSIGNED_SHORT, offset);
     }
 }
 
@@ -168,7 +192,6 @@ class Attrubute {
 
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(value), this.gl.STATIC_DRAW);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
     }
 }
 
