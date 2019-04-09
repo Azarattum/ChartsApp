@@ -6,9 +6,9 @@ uniform mat3 projection;
 uniform float aspect;
 
 uniform float thickness;
-uniform int miter;
 
 void main() {
+	int miter = 1;
 	vec2 aspectVector = vec2(aspect, 1.0);
 	vec2 fix = vec2(2.0, 1.0);
 	vec2 previousProjected = (projection * vec3(fix * previous, 1.)).xy;

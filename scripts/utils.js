@@ -10,12 +10,12 @@ class Color {
             return;
         }
 
-        if (Number.isInteger(param1) && Number.isInteger(param2) &&
-            Number.isInteger(param3)) {
+        if (Number.isFinite(param1) && Number.isFinite(param2) &&
+            Number.isFinite(param3)) {
             this.r = param1;
             this.g = param2;
             this.b = param3;
-            if (Number.isInteger(param4)) {
+            if (Number.isFinite(param4)) {
                 this.a = param4;
             } else {
                 this.a = 255;
@@ -123,7 +123,7 @@ class Color {
         else if (+value < 0)
             return 0;
         else
-            return +value;
+            return Math.round(+value);
     }
 
     toString() {
@@ -200,6 +200,45 @@ class Point {
 
     get length() {
         return Math.sqrt(this.x * this.x + this.y * this.y);
+    }
+}
+
+class AnimationObject {
+    /**
+     * Creates an object for animating properties.
+     * @param {Number} startProperty Property value at the start of the animation.
+     * @param {Number} endProperty Property value at the end of the animation.
+     * @param {Number} duration How long the animation will be in milliseconds.
+     */
+    constructor(startProperty, endProperty = startProperty, duration = 0) {
+        this.startTime = Date.now();
+        this.duration = duration;
+        this.startProperty = startProperty;
+        this.endProperty = endProperty;
+    }
+
+    /**
+     * Returns the property value based on the past time.
+     */
+    get() {
+        let timePast = Date.now() - this.startTime;
+        if (timePast > this.duration) return this.endProperty;
+
+        if (typeof this.startProperty == "number") {
+            return this.startProperty + ((timePast / this.duration) * (this.endProperty - this.startProperty));
+        } else if (this.startProperty instanceof Color) {
+            return new Color(
+                this.startProperty.r + ((timePast / this.duration) * (this.endProperty.r - this.startProperty.r)),
+                this.startProperty.g + ((timePast / this.duration) * (this.endProperty.g - this.startProperty.g)),
+                this.startProperty.b + ((timePast / this.duration) * (this.endProperty.b - this.startProperty.b)),
+                this.startProperty.a + ((timePast / this.duration) * (this.endProperty.a - this.startProperty.a))
+            );
+        } else if (this.startProperty instanceof Point) {
+            return new Point(
+                this.startProperty.x + ((timePast / this.duration) * (this.endProperty.x - this.startProperty.x)),
+                this.startProperty.y + ((timePast / this.duration) * (this.endProperty.y - this.startProperty.y)),
+            );
+        }
     }
 }
 

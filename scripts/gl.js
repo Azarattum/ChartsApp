@@ -6,6 +6,7 @@ class GL {
      */
     constructor(canvas, program) {
         //GL Initializing
+        this.currentStack = 0;
         this.canvas = canvas;
         this.gl = canvas.getContext("webgl", {
             alpha: false,
@@ -21,10 +22,10 @@ class GL {
             premultipliedAlpha: false
         });
 
-        this.attributeBuffer = [];
+        this.attributeBuffer = [[]];
         this.attributes = new Proxy(this.attributeBuffer, {
             set: (obj, name, value) => {
-                let attribute = this.attributeBuffer.find(x => x.name == name);
+                let attribute = this.attributeBuffer[this.currentStack].find(x => x.name == name);
                 let type = this.program.attributes[name];
                 if (type == undefined) {
                     console.warn(new Error("Attribute " + name + " does not exist in shader program!"));
@@ -33,11 +34,12 @@ class GL {
                 if (attribute != undefined) {
                     attribute.update(value);
                 } else {
-                    this.attributeBuffer.push(new Attrubute(this.gl, program.program, type, name, value));
+                    this.attributeBuffer[this.currentStack].push(new Attrubute(this.gl, program.program, type, name, value));
                 }
+                return true;
             },
             get: (obj, name) => {
-                let attribute = this.attributeBuffer.find(x => x.name == name);
+                let attribute = this.attributeBuffer[this.currentStack].find(x => x.name == name);
                 if (attribute == undefined) return undefined;
                 return attribute.value;
             }
@@ -57,6 +59,7 @@ class GL {
                 } else {
                     this.uniformBuffer.push(new Uniform(this.gl, program.program, type, name, value));
                 }
+                return true;
             },
             get: (obj, name) => {
                 let uniform = this.uniformBuffer.find(x => x.name == name);
@@ -65,7 +68,7 @@ class GL {
             }
         });
 
-        this.indexBuffer = null;
+        this.indexBuffer = [];
 
         this.program = program;
         this.program.attach(this.gl);
@@ -81,15 +84,50 @@ class GL {
         this.resize();
     }
 
+    /**
+     * Sets current stack.
+     */
+    set stack(value) {
+        if (value < this.attributeBuffer.length)
+            this.currentStack = value;
+
+        for (const attribute of this.attributeBuffer[this.currentStack]) {
+            attribute.bind();
+        }
+
+        if (this.indexBuffer[this.currentStack]) {
+            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer[this.currentStack]);
+        }
+    }
+
+    /**
+     * Returns count of stacks.
+     */
+    get stack() {
+        return this.attributeBuffer.length;
+    }
+
+    /**
+     * Creates a new stack.
+     */
+    newStack() {
+        if (this.attributeBuffer[this.currentStack].length == 0) {
+            return this.currentStack;
+        }
+        this.attributeBuffer.push([]);
+        this.currentStack = this.attributeBuffer.length - 1;
+        return this.currentStack;
+    }
+
     set background(color) {
         color = color.toArray();
         this.gl.clearColor(color[0], color[1], color[2], color[3]);
     }
 
     set indices(indices) {
-        if (this.indexBuffer == null) {
-            this.indexBuffer = this.gl.createBuffer();
-            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+        if (this.indexBuffer.length <= this.currentStack) {
+            this.indexBuffer[this.currentStack] = this.gl.createBuffer();
+            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer[this.currentStack]);
         }
 
         if (!(indices instanceof Uint16Array)) {
@@ -141,50 +179,44 @@ class Attrubute {
         this.buffer = gl.createBuffer();
         this.name = name;
         this.value = value;
+        this.program = program;
 
-        let pointerSize, pointerType;
         switch (type) {
             case gl.FLOAT:
-                pointerSize = 1;
-                pointerType = gl.FLOAT;
+                this.pointerSize = 1;
+                this.pointerType = gl.FLOAT;
                 break;
             case gl.FLOAT_VEC2:
-                pointerSize = 2;
-                pointerType = gl.FLOAT;
+                this.pointerSize = 2;
+                this.pointerType = gl.FLOAT;
                 break;
             case gl.FLOAT_VEC3:
-                pointerSize = 3;
-                pointerType = gl.FLOAT;
+                this.pointerSize = 3;
+                this.pointerType = gl.FLOAT;
                 break;
             case gl.FLOAT_VEC4:
-                pointerSize = 4;
-                pointerType = gl.FLOAT;
+                this.pointerSize = 4;
+                this.pointerType = gl.FLOAT;
                 break;
             case gl.FLOAT_MAT2:
-                pointerSize = 2;
-                pointerType = gl.FLOAT;
+                this.pointerSize = 2;
+                this.pointerType = gl.FLOAT;
                 break;
             case gl.FLOAT_MAT3:
-                pointerSize = 3;
-                pointerType = gl.FLOAT;
+                this.pointerSize = 3;
+                this.pointerType = gl.FLOAT;
                 break;
             case gl.FLOAT_MAT4:
-                pointerSize = 4;
-                pointerType = gl.FLOAT;
+                this.pointerSize = 4;
+                this.pointerType = gl.FLOAT;
                 break;
 
             default:
                 throw new Error("Unknown attribute type " + type + "!");
         }
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-
+        this.bind();
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(value), gl.STATIC_DRAW);
-        let location = gl.getAttribLocation(program, name);
-        gl.vertexAttribPointer(location, pointerSize, pointerType, false, 0, 0);
-        gl.enableVertexAttribArray(location);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
     }
 
     update(value) {
@@ -192,6 +224,13 @@ class Attrubute {
 
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(value), this.gl.STATIC_DRAW);
+    }
+
+    bind() {
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
+        let location = this.gl.getAttribLocation(this.program, this.name);
+        this.gl.vertexAttribPointer(location, this.pointerSize, this.pointerType, false, 0, 0);
+        this.gl.enableVertexAttribArray(location);
     }
 }
 
@@ -270,7 +309,7 @@ class Uniform {
     update(value) {
         this.value = value;
 
-        if (!Array.isArray(value)) {
+        if (!Array.isArray(value) && !(value instanceof Float32Array)) {
             value = [value];
         }
         this.function.call(this.gl, this.location, value);
