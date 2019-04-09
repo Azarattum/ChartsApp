@@ -1,105 +1,56 @@
 class Path {
     constructor(points) {
-        this.data = Path.getNormals(points);
-        this.data.points = points;
+        this.points = points;
+        this.indices = new Uint16Array(points.length * 6);
+        this.vertices = [];
+        this.previouses = [];
+        this.nexts = [];
+        this.directions = [];
 
-        this.values = {
-            points: [],
-            normals: [],
-            miters: [],
-            indices: []
-        }
-
-        this.data.points.forEach(point => {
-            this.values.points.push(point.x, point.y, point.x, point.y);
+        //Fill vertices
+        points.forEach(point => {
+            this.vertices.push(point.x, point.y, point.x, point.y);
         });
 
-        this.data.normals.forEach(normal => {
-            this.values.normals.push(normal.x, normal.y, normal.x, normal.y);
+        //Fill previouses
+        points.forEach((point, i, array) => {
+            if (i > 0) i--;
+
+            this.previouses.push(
+                array[i].x, array[i].y, array[i].x, array[i].y
+            );
         });
 
-        this.data.miters.forEach(miter => {
-            this.values.miters.push(-miter, miter);
+        //Fill nexts
+        points.forEach((point, i, array) => {
+            if (i < array.length-1) i++;
+
+            this.nexts.push(
+                array[i].x, array[i].y, array[i].x, array[i].y
+            );
         });
 
-        this.values.indices = new Uint16Array(points.length * 6);
-        let c = 0;
+        //Fill direction
+        points.forEach(point => {
+            this.directions.push(-1, 1);
+        });
+
+        //Fill indices
+        let j = 0;
         let index = 0;
-        for (let j = 0; j < points.length; j++) {
+        points.forEach(point => {
             let i = index;
-            this.values.indices[c++] = i + 0;
-            this.values.indices[c++] = i + 1;
-            this.values.indices[c++] = i + 2;
-            this.values.indices[c++] = i + 2;
-            this.values.indices[c++] = i + 1;
-            this.values.indices[c++] = i + 3;
+            this.indices[j++] = i + 0;
+            this.indices[j++] = i + 1;
+            this.indices[j++] = i + 2;
+            this.indices[j++] = i + 2;
+            this.indices[j++] = i + 1;
+            this.indices[j++] = i + 3;
             index += 2;
-        }
-    }
-
-    get normals() {
-        return this.values.normals;
-    }
-
-    get miters() {
-        return this.values.miters;
-    }
-
-    get vertices() {
-        return this.values.points;
-    }
-
-    get indices() {
-        return this.values.indices;
+        });
     }
     
     get length() {
-        return (this.data.points.length - 1) * 6;
-    }
-
-    static getNormals(points) {
-        let currentNormal = null;
-        let normals = {
-            normals: [],
-            miters: []
-        };
-
-        for (let i = 1; i < points.length; i++) {
-            let last = points[i - 1];
-            let current = points[i];
-            let next = i < points.length - 1 ? points[i + 1] : null;
-
-            let line = current.subtract(last).normalize();
-            if (!currentNormal) {
-                currentNormal = line.normal();
-            }
-
-            //Initial normals
-            if (i === 1) {
-                normals.normals.push(currentNormal);
-                normals.miters.push(1);
-            }
-
-            //No miter if simple segment
-            if (!next) {
-                currentNormal = line.normal();
-                normals.normals.push(currentNormal);
-                normals.miters.push(1);
-            } else {
-                //Next line
-                let nextLine = next.subtract(current).normalize();
-
-                //Compute miter
-                let normal = line.add(nextLine).normalize().normal();
-                let tmp = line.normal();
-
-                let miter = 1 / normal.dot(tmp);
-
-                normals.normals.push(normal);
-                normals.miters.push(miter);
-            }
-        }
-
-        return normals;
+        return (this.points.length - 1) * 6;
     }
 }

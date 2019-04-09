@@ -1,10 +1,8 @@
-attribute vec3 position;
+attribute vec2 position;
+attribute vec2 next;
+attribute vec2 previous;
 attribute float direction;
-attribute vec3 next;
-attribute vec3 previous;
-uniform mat4 projection;
-uniform mat4 model;
-uniform mat4 view;
+uniform mat3 projection;
 uniform float aspect;
 
 uniform float thickness;
@@ -12,48 +10,52 @@ uniform int miter;
 
 void main() {
 	vec2 aspectVector = vec2(aspect, 1.0);
-	vec4 previousProjected = projection * vec4(previous, 1.0);
-	vec4 currentProjected = projection * vec4(position, 1.0);
-	vec4 nextProjected = projection * vec4(next, 1.0);
+	vec2 fix = vec2(2.0, 1.0);
+	vec2 previousProjected = (projection * vec3(fix * previous, 1.)).xy;
+	vec2 currentProjected = (projection * vec3(fix * position, 1.)).xy;
+	vec2 nextProjected = (projection * vec3(fix * next, 1.)).xy;
 
 	//Devide by W and correct with aspect
-	vec2 currentScreen = currentProjected.xy / currentProjected.w * aspectVector;
-	vec2 previousScreen = previousProjected.xy / previousProjected.w * aspectVector;
-	vec2 nextScreen = nextProjected.xy / nextProjected.w * aspectVector;
+	vec2 currentPoint = currentProjected.xy * aspectVector;
+	vec2 previousPoint = previousProjected.xy * aspectVector;
+	vec2 nextPoint = nextProjected.xy * aspectVector;
 
 	float length = thickness;
 	float orientation = direction;
 
-	//starting point uses (next - current)
-	vec2 dir = vec2(0.0);
-	if (currentScreen == previousScreen) {
-		dir = normalize(nextScreen - currentScreen);
+	//Starting point uses (next - current)
+	vec2 normal = vec2(0.0);
+	if (currentPoint == previousPoint) {
+		normal = normalize(nextPoint - currentPoint);
 	}
-	//ending point uses (current - previous)
-	else if (currentScreen == nextScreen) {
-		dir = normalize(currentScreen - previousScreen);
+	//Ending point uses (current - previous)
+	else if (currentPoint == nextPoint) {
+		normal = normalize(currentPoint - previousPoint);
 	}
-	//somewhere in middle, needs a join
+	//Join in the middle
 	else {
-		//get directions from (C - B) and (B - A)
-		vec2 dirA = normalize((currentScreen - previousScreen));
+		//Get current line
+		vec2 line = normalize((currentPoint - previousPoint));
 		if (miter == 1) {
-			vec2 dirB = normalize((nextScreen - currentScreen));
-			//now compute the miter join normal and length
-			vec2 tangent = normalize(dirA + dirB);
-			vec2 perp = vec2(-dirA.y, dirA.x);
+			//Get the next line
+			vec2 nextLine = normalize((nextPoint - currentPoint));
+
+			//Compute the miter join: normal and length
+			vec2 tangent = normalize(line + nextLine);
+			vec2 temp = vec2(-line.y, line.x);
 			vec2 miter = vec2(-tangent.y, tangent.x);
-			dir = tangent;
-			length = thickness / dot(miter, perp);
+
+			normal = tangent;
+			length = thickness / dot(miter, temp);
 		} else {
-			dir = dirA;
+			normal = line;
 		}
 	}
-	vec2 normal = vec2(-dir.y, dir.x);
+
+	normal = vec2(-normal.y, normal.x);
 	normal *= length / 2.0;
 	normal.x /= aspect;
 
-	vec4 offset = vec4(normal * orientation, 0.0, 1.0);
-	gl_Position = currentProjected + offset;
+	gl_Position = vec4(currentProjected + normal * orientation, 0.0, 1.0);
 	gl_PointSize = 1.0;
 }
