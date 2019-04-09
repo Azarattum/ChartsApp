@@ -194,6 +194,10 @@ class Point {
         return new Point(this.x - point.x, this.y - point.y);
     }
 
+    dot(point) {
+        return this.x * point.x + this.y * point.y;
+    }
+
     get length() {
         return Math.sqrt(this.x * this.x + this.y * this.y);
     }
