@@ -1,7 +1,7 @@
 console.debugging = true;
 const ANIMATION_PERIOD = 200;
-var gl;
 var chart;
+var drawer;
 
 load({
     "data/2/overview.json": "chart",
@@ -13,65 +13,16 @@ load({
     let fragmentShader = new Shader(data["lineShader"], Shader.types.FRAGMENT);
     let program = new ShadersProgram(vertexShader, fragmentShader);
     let canvas = document.getElementById("chart");
-
-    gl = new GL(canvas, program);
-    gl.background = new Color(
-        getComputedStyle(document.getElementsByClassName("page")[0])
-        .getPropertyValue("--color-background")
-    );
-    gl.clear();
-
+    
     /*===================TESTS!===================*/
     chart = new Chart(data["chart"]);
-    gl.uniforms.aspect = canvas.width / canvas.height;
-    gl.uniforms.thickness = 5 / canvas.height;
+    drawer = new ChartDrawer(chart, canvas, program);
 
-    let drawer1 = new GraphDrawer(chart.graphs[0], this.gl);
-    let drawer2 = new GraphDrawer(chart.graphs[1], this.gl);
-    drawer1.draw();
-    drawer2.draw();
-
-    /*let mat = [
-        1, 0, 0,
-        0, 1, 0,
-        0, 0, 1
-    ];
-
-    let path = new Path(chart.graphs[0].vertices);
-    gl.uniforms.thickness = 5 / canvas.height;
-    gl.uniforms.miter = 1;
-    gl.uniforms.aspect = canvas.width / canvas.height;
-
-    gl.indices = path.indices;
-    gl.attributes.position = path.vertices;
-    gl.attributes.next = path.nexts;
-    gl.attributes.previous = path.previouses;
-    gl.attributes.direction = path.directions;
-
-    draw();
-
-    path = new Path(chart.graphs[1].vertices);
-    gl.newStack();
-    gl.indices = path.indices;
-    gl.attributes.position = path.vertices;
-    gl.attributes.next = path.nexts;
-    gl.attributes.previous = path.previouses;
-    gl.attributes.direction = path.directions;
-
-    draw();
-
-    gl.clear();
-
-    gl.stack = 0;
-    draw();
-    gl.stack = 1;
-    draw();*/
-
-    console.log(path);
+    requestAnimationFrame(draw);
 
     function draw() {
-        gl.uniforms.projection = mat;
-        gl.drawElements(path.length);
+        drawer.draw();
+        requestAnimationFrame(draw);
     }
 });
 

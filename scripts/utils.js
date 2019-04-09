@@ -240,6 +240,14 @@ class AnimationObject {
             );
         }
     }
+
+    /**
+     * Returns whether animation is in progress or not.
+     */
+    get inProgress() {
+        if ((Date.now() - this.startTime) > this.duration) return false;
+        return true;
+    }
 }
 
 //Custom debugging output

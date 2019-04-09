@@ -10,10 +10,9 @@ uniform float thickness;
 void main() {
 	int miter = 1;
 	vec2 aspectVector = vec2(aspect, 1.0);
-	vec2 fix = vec2(2.0, 1.0);
-	vec2 previousProjected = (projection * vec3(fix * previous, 1.)).xy;
-	vec2 currentProjected = (projection * vec3(fix * position, 1.)).xy;
-	vec2 nextProjected = (projection * vec3(fix * next, 1.)).xy;
+	vec2 previousProjected = (projection * vec3(previous, 1.)).xy;
+	vec2 currentProjected = (projection * vec3(position, 1.)).xy;
+	vec2 nextProjected = (projection * vec3(next, 1.)).xy;
 
 	//Devide by W and correct with aspect
 	vec2 currentPoint = currentProjected.xy * aspectVector;
