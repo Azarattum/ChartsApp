@@ -118,22 +118,25 @@ class GraphDrawer {
     /**
      * Draws the graph depending on current settings.
      */
-    draw(top = 1, fisrt = 0, last = 0) {
+    draw(minY, maxY, start, end) {
         //Zoom: 1 / (end - start)
         //Translation: start * zoom + offset
+        ///!!!CHECK PROPER TRANSFORM IMPLEMENTATION. CURRECT: THEORETICAL
         const zoomX = 1 / (this.end - this.start);
+        const zoomY = 1 / (maxY - minY);
         const moveX = -this.start * zoomX;
-        const moveY = this.bottom / this.gl.viewport.height;
+        const moveY = this.bottom / this.gl.viewport.height + minY;
         const projection = [
             zoomX, 0, 0,
-            0, top, 0,
+            0, zoomY, 0,
             moveX, moveY, 1
         ];
 
         this.gl.stack = this.stack;
         this.gl.uniforms.projection = projection;
         this.gl.uniforms.color = this.color.toArray();
-        this.gl.drawElements(this.path.length - last, fisrt);
+        ///!!!IMPLIMENT PROPER COUNT CONVERTION
+        this.gl.drawElements(this.path.length - start * 6, end * 6);
         if (!this.color.inProgress) {
             this.redraw = false;
         }
@@ -221,32 +224,12 @@ class ChartDrawer {
      * @param {Number} percent The percentage of selected point.
      */
     set select(percent) {
-        if (percent == undefined) {
-            this.selection.date = null;
-        }
-        /*if (this.graph != undefined) {!!!
-            const visibleGraph = this.graph;
-            const size = visibleGraph.bounds.right - visibleGraph.bounds.left;
-            const position = visibleGraph.bounds.left + (size * percent);
-
-            this.selection.values = [];
-            for (const drawer of this.graphDrawers) {
-                if (!drawer.visible) {
-                    this.selection.values.push(undefined);
-                    continue;
-                }
-
-                let value = Number.MAX_SAFE_INTEGER;
-                for (const x in drawer.graph.values) {
-                    if (Math.abs(x - position) < value) {
-                        value = Math.abs(x - position);
-                        this.selection.date = x;
-                    }
-                }
-                this.selection.values.push(drawer.graph.values[this.selection.date]);
-            }
-        }*/
         this.redraw = true;
+        if (percent == undefined) {
+            this.selection = null;
+            return;
+        }
+        this.selection = percent;
     }
 
     /**
@@ -293,14 +276,63 @@ class ChartDrawer {
      */
     drawGraphs() {
         //Compute values before drawing
-        const count = this.graphDrawers[0].graph.length;
-        let maximum, start, end;
-        for (let i = 0; i < count; i++) {
-            this.graphDrawers[0].graph.point[i]
+        const points = this.graphDrawers[0].graph.points;
+        //Estimate index
+        let index = Math.round(this.start * points.lenth);
+        let previousDistance = Number.MAX_SAFE_INTEGER;
+        let goal = this.start * 2 - 1;
+        //Search for start index
+        while (true) {
+            const vertex = this.graphDrawers[0].graph.vertices[index];
+            const distance = goal - vertex.x;
+            if (distance > 0) {
+                index++;
+            } else {
+                index—-;
+            }
+            if (Math.abs(previousDistance) > Math.abs(distance)) {
+                previousDistance = distance;
+            } else {
+                break;
+            }
         }
-
+        //Save start offset
+        const start = index;
+        let selectionIndex = null;
+        let minSelectionIndex = Number.MAX_SAFE_INTEGER;
+        let maxY = -Number.MAX_SAFE_INTEGER;
+        let minY = Number.MAX_SAFE_INTEGER;
+        //Go forward and scan
+        goal = this.end * 2 - 1;
+        const selection = this.selection * 2 - 1;
+        while (true) {
+            //Wait for the end
+            const vertex = this.graphDrawers[0].graph.vertices[index];
+            if (vertex.x > goal) {
+                break;
+            }
+            //Calculate selection
+            if (this.selection != null) {
+                const distance = Math.abs(vertex.x - selection);
+                if (distance < minSelectionDistance) {
+                    minSelectionDistance = distance;
+                    selectionIndex = index;
+                }
+            }
+            //Calculate local maximum ans minimum
+            for (const drawer of this.graphDrawers) {
+                const graphVertex = drawer.graph.vertices[index];
+                if (graphVertex.y > maxY) {
+                    maxY = graphVertex.y;
+                } else if (graphVertex.y < minY) {
+                    minY = graphVertex.y;
+                }
+            }
+            index++;
+        }
+        
         for (const drawer of this.graphDrawers) {
-            drawer.draw();
+            drawer.draw(minY, maxY, start, index);
         }
     }
 
