@@ -157,10 +157,9 @@ class ChartDrawer {
         /**Graph drawer objects.*/
         this.graphDrawers = [];
         /**The selection.*/
-        this.selection = {
-            date: null,
-            values: []
-        };
+        this.selection = null;
+        /**Selection stack id*/
+        this.selectionStack = this.gl.newStack();
         /**Visible graphs area.*/
         this.area = {
             start: 0,
@@ -171,7 +170,7 @@ class ChartDrawer {
         /**Layout drawer object.*/
         //this.layoutDrawer = new LayoutDrawer(canvas);
         /**Whether draw layout or not.*/
-        //this.layout = true;
+        this.layout = true;
         /**The user defined offsets.*/
         this.bottom = bottom;
         //#endregion
@@ -183,6 +182,18 @@ class ChartDrawer {
         for (const graph of chart.graphs) {
             this.graphDrawers.push(new GraphDrawer(graph, this.gl, bottom));
         }
+        
+        ///Move to layout drawer later
+        let path = new Path([
+            new Point(0, -1),
+            new Point(0, 1)
+        ]);
+        this.gl.indices = path.indices;
+
+        this.gl.attributes.position = path.vertices;
+        this.gl.attributes.next = path.nexts;
+        this.gl.attributes.previous = path.previouses;
+        this.gl.attributes.direction = path.directions;
 
         console.debug("ChartDrawer created", this);
     }
@@ -264,7 +275,6 @@ class ChartDrawer {
                 .getPropertyValue("--color-background")
             );
             this.gl.clear();
-            //if (this.layout) this.drawSelection();
             this.drawGraphs();
             //if (this.layout) this.drawLayout();
         }
@@ -298,7 +308,7 @@ class ChartDrawer {
         }
         //Save start offset
         const start = index;
-        let selectionIndex = null;
+        let selectionX = null;
         let minSelectionIndex = Number.MAX_SAFE_INTEGER;
         let maxY = -Number.MAX_SAFE_INTEGER;
         let minY = Number.MAX_SAFE_INTEGER;
@@ -316,7 +326,7 @@ class ChartDrawer {
                 const distance = Math.abs(vertex.x - selection);
                 if (distance < minSelectionDistance) {
                     minSelectionDistance = distance;
-                    selectionIndex = index;
+                    selectionX = vertex.x;
                 }
             }
             //Calculate local maximum ans minimum
@@ -330,6 +340,8 @@ class ChartDrawer {
             }
             index++;
         }
+        
+        if (this.layout) this.drawSelection(selectionX);
         
         for (const drawer of this.graphDrawers) {
             drawer.draw(minY, maxY, start, index);
@@ -348,24 +360,28 @@ class ChartDrawer {
                 this.offsets.bottom
             );
         }
-    }
+    }*/
 
     /**
      * Draws the selection part of the layout.
-     
-    drawSelection() {
-        if (this.graph != undefined) {
-            let visibleDrawer = this.graph;
-            if (this.selection.date != null) {
-                this.layoutDrawer.drawSelection(
-                    this.selection.date,
-                    visibleDrawer.bounds,
-                    this.offsets.bottom
-                );
-            }
-        }
-    }*/
-}
+     */
+    drawSelection(x) {
+        //Zoom: 1 / (end - start)
+        //Translation: start * zoom + offset
+        ///!!!CHECK PROPER TRANSFORM IMPLEMENTATION. CURRECT: THEORETICAL
+        const moveX = -this.start * zoomX;
+        const projection = [
+            1, 0, 0,
+            0, 1, 0,
+            x, 0, 1
+        ];
+
+        this.gl.stack = this.selectionStack;
+        this.gl.uniforms.projection = projection;
+        this.gl.uniforms.color = new Color(200, 200, 200, 150);
+        ///!!!IMPLIMENT PROPER COUNT CONVERTION
+        this.gl.drawElements(1 * 6);
+    }
 
 /**!!!
  * FOR CHARTDRAWER:
