@@ -158,8 +158,6 @@ class ChartDrawer {
         this.graphDrawers = [];
         /**The selection.*/
         this.selection = null;
-        /**Selection stack id*/
-        this.selectionStack = this.gl.newStack();
         /**Visible graphs area.*/
         this.area = {
             start: 0,
@@ -183,18 +181,6 @@ class ChartDrawer {
             this.graphDrawers.push(new GraphDrawer(graph, this.gl, bottom));
         }
         
-        ///Move to layout drawer later
-        let path = new Path([
-            new Point(0, -1),
-            new Point(0, 1)
-        ]);
-        this.gl.indices = path.indices;
-
-        this.gl.attributes.position = path.vertices;
-        this.gl.attributes.next = path.nexts;
-        this.gl.attributes.previous = path.previouses;
-        this.gl.attributes.direction = path.directions;
-
         console.debug("ChartDrawer created", this);
     }
 
@@ -366,14 +352,209 @@ class ChartDrawer {
      * Draws the selection part of the layout.
      */
     drawSelection(x) {
+        
+    }
+    
+}
+
+class LayoutDrawer {
+    /**
+     * Creates an object for drawing a layout.
+     * @param {Element} canvas The canvas for drawing layout.
+     */
+    constructor(canvas, gl) {
+        //#region Properties
+        this.canvas = canvas;
+        this.context = canvas.getContext("2d");
+        this.gl = gl;
+        /**Amount of line to draw.*/
+        this.lineCount = 6;
+        this.dateCount = 7;
+        this.dateScale = 4;
+        //#endregion
+        
+        /**Selection stack id*/
+        this.selectionStack = this.gl.newStack();
+        
+        let path = new Path([
+            new Point(0, -1),
+            new Point(0, 1)
+        ]);
+        this.gl.indices = path.indices;
+
+        this.gl.attributes.position = path.vertices;
+        this.gl.attributes.next = path.nexts;
+        this.gl.attributes.previous = path.previouses;
+        this.gl.attributes.direction = path.directions;
+
+        /**Line stack id*/
+        this.linesStack = this.gl.newStack();
+        
+        let lines = [];
+        for (let i = 0; i < this.lineCount; i++) {
+            lines.push(new Point(-1.1 * Math.pow(-1, i), 2 / this.lineCount * i - 1));
+            lines.push(new Point(1.1 * Math.pow(-1, i), 2 / this.lineCount * i - 1));
+        }
+        
+        let path = new Path(lines);
+        this.gl.indices = path.indices;
+
+        this.gl.attributes.position = path.vertices;
+        this.gl.attributes.next = path.nexts;
+        this.gl.attributes.previous = path.previouses;
+        this.gl.attributes.direction = path.directions;
+
+        console.debug("LayoutDrawer created", this);
+    }
+
+    /**
+     * Returns size of viewing area.
+     */
+    get view() {
+        return {
+            width: +this.canvas.width,
+            height: +this.canvas.height
+        };
+    }
+
+    /**
+     * Draws the layout.
+     * @param {Object} bounds Graph drawer current bounds.
+     * @param {Number} bottom Margin from the bottom (for dates).
+     */
+    draw(bounds, maxBounds, bottom) {
+        //Update colors
+        this.lineColor = "rgba(" +
+            window.getComputedStyle(document.getElementsByClassName("page")[0])
+            .getPropertyValue("--color-text").trim() + ", 0.25)";
+        this.textColor = "rgba(" +
+            window.getComputedStyle(document.getElementsByClassName("page")[0])
+            .getPropertyValue("--color-text").trim() + ", 0.5)";
+
+        this.drawLines(bounds, maxBounds, bottom);
+
+        this.context.fillStyle = this.textColor;
+        this.context.font = (bottom / 2) + "px " +
+            window.getComputedStyle(document.getElementsByClassName("page")[0])["font-family"];
+
+        this.drawDates(bounds, maxBounds, bottom);
+    }
+
+    /**
+     * Draws layout lines.
+     * @param {Object} bounds Graph drawer current bounds.
+     * @param {Number} bottom Margin from the bottom (for dates).
+     */
+    drawLines(bottom) {
         //Zoom: 1 / (end - start)
         //Translation: start * zoom + offset
-        ///!!!CHECK PROPER TRANSFORM IMPLEMENTATION. CURRECT: THEORETICAL
-        const moveX = -this.start * zoomX;
+        ///!!!ZOOM Y TO MATCH BOTTOM OFFSET
         const projection = [
             1, 0, 0,
             0, 1, 0,
-            x, 0, 1
+            0, bottom, 1
+        ];
+
+        this.gl.stack = this.linesStack;
+        this.gl.uniforms.projection = projection;
+        this.gl.uniforms.color = new Color(200, 200, 200, 150);
+        this.gl.drawElements((this.lineCount * 2 - 1) * 6);
+    }
+
+    /**
+     * Draws layout dates.
+     * @param {Object} bounds Graph drawer current bounds.
+     * @param {Number} bottom Margin from the bottom (for dates).
+     */
+    drawDates(bounds, maxBounds, bottom) {
+        const margin = (bottom / 2) + (bottom - (bottom / 2)) / 2 - bottom;
+        const left = bounds.left - maxBounds.left;
+
+        const size = (bounds.right - bounds.left);
+        const spacing = this.view.width / (this.dateCount - 1);
+        const area = size / (this.dateCount - 1);
+
+        const maxSize = (maxBounds.right - maxBounds.left);
+        const zoom = size / maxSize;
+        const ratio = size / this.view.width;
+
+        const offset = ((left * zoom) % area) / ratio;
+
+        let scale = 1 / Math.pow(2, this.dateScale + 1);
+
+        for (let i = 0; i < this.dateCount; i++) {
+            let x = spacing / Math.pow(2, this.dateScale) * i;
+            let x0 = x;
+
+            x -= offset;
+
+            for (let s = Math.pow(2, this.dateScale); s >= 2; s /= 2) {
+                let expected = Math.pow(2, (this.dateScale - Math.log2(s)));
+                if (expected > this.dateCount) {
+                    expected = expected % this.dateCount;
+                } else if (expected == this.dateCount) {
+                    expected = 1;
+                }
+
+                let modulo = (i % (expected * 2)) - (i % expected);
+
+                if (zoom > (1 / s)) {
+                    scale = (1 / s);
+                    if (modulo == expected) {
+                        x += spacing * (this.dateCount / s);
+                        x0 += spacing * (this.dateCount / s);
+                    }
+                }
+            }
+
+            while (x / scale < (-bottom * 3)) {
+                x += spacing * (this.dateCount * scale * 2);
+                x0 += spacing * (this.dateCount * scale * 2);
+            }
+
+            x /= zoom;
+            x0 /= zoom;
+
+            const int = 1 / zoom;
+            const min = 1 / scale / 2;
+            const max = 1 / scale;
+            if ((int - min) / (max - min) < 0.25 && scale < 0.5) {
+                this.context.globalAlpha = ((x0 + spacing) % (spacing * 2)) / (spacing / 4);
+            }
+
+            this.drawDate(bounds, ratio, margin, x);
+            this.context.globalAlpha = 1;
+        }
+    }
+
+    /**
+     * Draws the date based on graph bounds and provided coordinate.
+     * @param {Object} bounds Graph bounds.
+     * @param {Number} ratio Ratio between bounds size and viewing size.
+     * @param {Number} margin Bottom magin.
+     * @param {Number} x Coordinate to draw.
+     */
+    drawDate(bounds, ratio, margin, x) {
+        let label = Math.round(bounds.left + x * ratio);
+        label = (new Date(label)).toString().split(' ')[1] + " " +
+            (new Date(label)).toString().split(' ')[2];
+
+        this.context.fillText(label, x, this.view.height + margin);
+    }
+
+    /**
+     * Draws the selection line
+     * @param {Number} x Date of line coordinate.
+     * @param {Number} bottom Margin from the bottom (for dates).
+     */
+    drawSelection(x, bottom) {
+        //Zoom: 1 / (end - start)
+        //Translation: start * zoom + offset
+        ///!!!BOTTOM OFFSET IS NOT INPLEMENTED YET
+        const projection = [
+            1, 0, 0,
+            0, 1, 0,
+            x, bottom, 1
         ];
 
         this.gl.stack = this.selectionStack;
@@ -382,6 +563,7 @@ class ChartDrawer {
         ///!!!IMPLIMENT PROPER COUNT CONVERTION
         this.gl.drawElements(1 * 6);
     }
+}
 
 /**!!!
  * FOR CHARTDRAWER:
