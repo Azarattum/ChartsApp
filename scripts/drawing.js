@@ -495,23 +495,25 @@ class LayoutDrawer {
         this.gl.uniforms.color = color.toArray();
         this.gl.drawStrip(2);
 
-        projection[7] = move % ((this.lineCount - 1) * 2 / this.lineCount);//+ + this.lineFade.get() / this.gl.viewport.height;// * Math.pow(-1, Math.round(move / 2));
-        //console.log(projection[7]);
-        let pos = projection[7] % (2 / 6);
-        console.log("pos", projection[7] - pos);
-        if (graphProjection && !graphProjection.inProgress && !this.lineOffset.inProgress) {
-            this.lineOffset.set(pos, ANIMATION_PERIOD / 2);
+        projection[7] = move % (2 / this.lineCount);
+        if (projection[7] > (move % (1 / this.lineCount))) {
+            this.lineFade.set(0, ANIMATION_PERIOD * 2);
+            this.redraw = true;
+        } else {
+            this.lineFade.set(64, ANIMATION_PERIOD * 2);
             this.redraw = true;
         }
-        projection[7] -= this.lineOffset.get();
+        projection[7] -= (this.lineFade.get() / 64) / this.lineCount;
 
-        color.a = 64;
+        color.a = this.lineFade.get();
         this.gl.uniforms.projection = projection;
         this.gl.uniforms.color = color.toArray();
         this.gl.drawStrip(this.lineCount * 2, 1);
 
-        projection[7] -= (this.lineCount - 1) * 2 / this.lineCount;
+        color.a = 64 - this.lineFade.get();
+        projection[7] -= 1 / this.lineCount;
         this.gl.uniforms.projection = projection;
+        this.gl.uniforms.color = color.toArray();
         this.gl.drawStrip(this.lineCount * 2, 1);
     }
 
