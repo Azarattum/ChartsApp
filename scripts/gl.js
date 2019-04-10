@@ -120,6 +120,7 @@ class GL {
     }
 
     set background(color) {
+        if (!color) return;
         color = color.toArray();
         this.gl.clearColor(color[0], color[1], color[2], color[3]);
     }
@@ -168,7 +169,7 @@ class GL {
     }
 
     drawElements(count, offset = 0) {
-        this.gl.drawElements(this.gl.TRIANGLES, count - offset, this.gl.UNSIGNED_SHORT, offset);
+        this.gl.drawElements(this.gl.TRIANGLES, count - offset, this.gl.UNSIGNED_SHORT, offset * 2);
     }
 }
 

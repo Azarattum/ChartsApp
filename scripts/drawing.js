@@ -26,6 +26,8 @@ class GraphDrawer {
         this.visibilityState = true;
         /**Whethe the graph needs to redraw.*/
         this.redraw = true;
+        /**Describes graph transformations.*/
+        this.projection = null;
         //#endregion
 
         gl.indices = this.path.indices;
@@ -42,7 +44,7 @@ class GraphDrawer {
         this.area.start = value;
         this.redraw = true;
     }
-    
+
     get start() {
         if (this.area.start instanceof AnimationObject) {
             return this.area.start.get();
@@ -55,7 +57,7 @@ class GraphDrawer {
         this.area.end = value;
         this.redraw = true;
     }
-    
+
     get end() {
         if (this.area.end instanceof AnimationObject) {
             return this.area.end.get();
@@ -82,7 +84,7 @@ class GraphDrawer {
     get visible() {
         if (this.color.a == 255) {
             return true;
-        } else if (this.color.a == 0){
+        } else if (this.color.a == 0) {
             return false;
         } else {
             return this.visibilityState;
@@ -112,32 +114,44 @@ class GraphDrawer {
 
     toggle() {
         this.color = new Color(this.color.r, this.color.g, this.color.b, +(!this.visible) * 255);
-        this.visibilityState =! this.visibilityState;
+        this.visibilityState = !this.visibilityState;
     }
 
     /**
      * Draws the graph depending on current settings.
      */
-    draw(minY, maxY, start, end) {
-        //Zoom: 1 / (end - start)
-        //Translation: start * zoom + offset
-        ///!!!CHECK PROPER TRANSFORM IMPLEMENTATION. CURRECT: THEORETICAL
+    draw(maxY, start, end) {
+        //Zoom: 1 / (end - start), (2 - offset) / (top + 1)
+        //Translation: (1 - end - start) * zoom, 
+        console.log("Max Y:", maxY, "Start:", start, "End:", end);
         const zoomX = 1 / (this.end - this.start);
-        const zoomY = 1 / (maxY - minY);
-        const moveX = -this.start * zoomX;
-        const moveY = this.bottom / this.gl.viewport.height + minY;
-        const projection = [
+        const zoomY = 2 * (1 - (this.bottom / this.gl.viewport.height)) / (maxY + 1);
+        const moveX = (1 - this.start - this.end) * zoomX;
+        const moveY = (this.bottom / this.gl.viewport.height * 2) + (zoomY - 1);
+        let projection = [
             zoomX, 0, 0,
             0, zoomY, 0,
             moveX, moveY, 1
         ];
 
+        if (this.projection == null) {
+            this.projection = new AnimationObject(projection);
+        } else {
+            this.projection.set(projection, 200);
+        }
+
         this.gl.stack = this.stack;
-        this.gl.uniforms.projection = projection;
+        this.gl.uniforms.projection = this.projection.get();
         this.gl.uniforms.color = this.color.toArray();
-        ///!!!IMPLIMENT PROPER COUNT CONVERTION
-        this.gl.drawElements(this.path.length - start * 6, end * 6);
-        if (!this.color.inProgress) {
+
+        //Left additional points off the screen to avoid artifacts
+        for (let i = 0; i < 10; i++) {
+            if (end < this.graph.points.length) end++;
+            if (start > 0) start--;
+        }
+
+        this.gl.drawElements((end - 1) * 6, start * 6);
+        if (!this.color.inProgress && !this.projection.inProgress) {
             this.redraw = false;
         }
     }
@@ -166,7 +180,7 @@ class ChartDrawer {
         /**Whether the chart needs to redraw.*/
         this.redraw = true;
         /**Layout drawer object.*/
-        //this.layoutDrawer = new LayoutDrawer(canvas);
+        this.layoutDrawer = new LayoutDrawer(canvas, this.gl);
         /**Whether draw layout or not.*/
         this.layout = true;
         /**The user defined offsets.*/
@@ -180,7 +194,7 @@ class ChartDrawer {
         for (const graph of chart.graphs) {
             this.graphDrawers.push(new GraphDrawer(graph, this.gl, bottom));
         }
-        
+
         console.debug("ChartDrawer created", this);
     }
 
@@ -212,7 +226,7 @@ class ChartDrawer {
         for (const drawer of this.graphDrawers) {
             drawer.end = percent;
         }
-        this.area.end = end;
+        this.area.end = percent;
         this.redraw = true;
     }
 
@@ -245,46 +259,39 @@ class ChartDrawer {
     /**
      * Updates sizes and colors.
      */
-    update() {
+    update(backgroundColor, textColor) {
         this.gl.resize();
         this.gl.uniforms.aspect = this.gl.viewport.width / this.gl.viewport.height;
         this.gl.uniforms.thickness = 5 / this.canvas.height;
-    }
-
-    /**
-     * Draws all charts.
-     */
-    draw() {
-        if (this.redraw || this.graphDrawers.some(x => x.redraw)) {
-            this.gl.background = new Color(
-                getComputedStyle(document.getElementsByClassName("page")[0])
-                .getPropertyValue("--color-background")
-            );
-            this.gl.clear();
-            this.drawGraphs();
-            //if (this.layout) this.drawLayout();
+        if (backgroundColor) {
+            this.gl.background = backgroundColor;
         }
-        this.redraw = false;
+        if (textColor) {
+            this.layoutDrawer.color = textColor;
+        }
+        this.redraw = true;
     }
 
     /**
-     * Draws the graphs of the chart.
+     * Calculates chart values for drawing.
      */
-    drawGraphs() {
+    calculate() {
         //Compute values before drawing
         const points = this.graphDrawers[0].graph.points;
         //Estimate index
-        let index = Math.round(this.start * points.lenth);
+        let index = Math.round(this.area.start * points.length);
         let previousDistance = Number.MAX_SAFE_INTEGER;
-        let goal = this.start * 2 - 1;
+        let goal = this.area.start * 2 - 1;
         //Search for start index
         while (true) {
             const vertex = this.graphDrawers[0].graph.vertices[index];
             const distance = goal - vertex.x;
             if (distance > 0) {
                 index++;
+            } else if (distance < 0) {
+                index--;
             } else {
-                index—-;
+                break;
             }
             if (Math.abs(previousDistance) > Math.abs(distance)) {
                 previousDistance = distance;
@@ -295,14 +302,17 @@ class ChartDrawer {
         //Save start offset
         const start = index;
         let selectionX = null;
-        let minSelectionIndex = Number.MAX_SAFE_INTEGER;
+        let minSelectionDistance = Number.MAX_SAFE_INTEGER;
         let maxY = -Number.MAX_SAFE_INTEGER;
         let minY = Number.MAX_SAFE_INTEGER;
         //Go forward and scan
-        goal = this.end * 2 - 1;
+        goal = this.area.end * 2 - 1;
         const selection = this.selection * 2 - 1;
         while (true) {
             //Wait for the end
+            if (index >= this.graphDrawers[0].graph.vertices.length) {
+                break;
+            }
             const vertex = this.graphDrawers[0].graph.vertices[index];
             if (vertex.x > goal) {
                 break;
@@ -326,35 +336,54 @@ class ChartDrawer {
             }
             index++;
         }
-        
-        if (this.layout) this.drawSelection(selectionX);
-        
+
+        return {
+            selection: selectionX,
+            top: maxY,
+            start: start,
+            end: index
+        };
+    }
+
+    /**
+     * Draws all charts.
+     */
+    draw() {
+        const drawingData = this.calculate();
+
+        if (this.redraw || this.graphDrawers.some(x => x.redraw)) {
+            this.gl.clear();
+            if (this.layout) this.drawSelection(drawingData.selection);
+            this.drawGraphs(drawingData.top, drawingData.start, drawingData.end);
+            if (this.layout) this.drawLayout();
+        }
+        this.redraw = false;
+    }
+
+    /**
+     * Draws the graphs of the chart.
+     */
+    drawGraphs(top, start, end) {
         for (const drawer of this.graphDrawers) {
-            drawer.draw(minY, maxY, start, index);
+            drawer.draw(top, start, end);
         }
     }
 
     /**
      * Draws the layout for the chart.
-     
+     */
     drawLayout() {
-        if (this.graph != undefined) {
-            let visibleDrawer = this.graph;
-            this.layoutDrawer.draw(
-                visibleDrawer.bounds,
-                visibleDrawer.maxBounds,
-                this.offsets.bottom
-            );
-        }
-    }*/
+        this.layoutDrawer.draw(this.bottom);
+    }
 
     /**
      * Draws the selection part of the layout.
      */
     drawSelection(x) {
-        
+        if (x != null) {
+            this.layoutDrawer.drawSelection(x, this.bottom);
+        }
     }
-    
 }
 
 class LayoutDrawer {
@@ -371,50 +400,53 @@ class LayoutDrawer {
         this.lineCount = 6;
         this.dateCount = 7;
         this.dateScale = 4;
+        this.color = new Color();
         //#endregion
-        
+
         /**Selection stack id*/
         this.selectionStack = this.gl.newStack();
-        
-        let path = new Path([
-            new Point(0, -1),
-            new Point(0, 1)
-        ]);
-        this.gl.indices = path.indices;
 
-        this.gl.attributes.position = path.vertices;
-        this.gl.attributes.next = path.nexts;
-        this.gl.attributes.previous = path.previouses;
-        this.gl.attributes.direction = path.directions;
+        this.gl.attributes.position = [0, -1, 0, 1];
+        this.gl.attributes.direction = [0, 0];
 
         /**Line stack id*/
         this.linesStack = this.gl.newStack();
-        
-        let lines = [];
-        for (let i = 0; i < this.lineCount; i++) {
-            lines.push(new Point(-1.1 * Math.pow(-1, i), 2 / this.lineCount * i - 1));
-            lines.push(new Point(1.1 * Math.pow(-1, i), 2 / this.lineCount * i - 1));
-        }
-        
-        let path = new Path(lines);
-        this.gl.indices = path.indices;
 
-        this.gl.attributes.position = path.vertices;
-        this.gl.attributes.next = path.nexts;
-        this.gl.attributes.previous = path.previouses;
-        this.gl.attributes.direction = path.directions;
+        let lines = [];
+        let directions = [];
+        for (let i = 0; i < this.lineCount; i++) {
+            lines.push(-1.1 * Math.pow(-1, i), 2 / this.lineCount * i - 1);
+            lines.push(1.1 * Math.pow(-1, i), 2 / this.lineCount * i - 1);
+            directions.push(0);
+            directions.push(0);
+        }
+
+        let path = new Path(lines);
+
+        this.gl.attributes.position = lines;
+        this.gl.attributes.direction = directions;
 
         console.debug("LayoutDrawer created", this);
     }
 
     /**
-     * Returns size of viewing area.
+     * Draws the selection line
+     * @param {Number} x Date of line coordinate.
+     * @param {Number} bottom Margin from the bottom (for dates).
      */
-    get view() {
-        return {
-            width: +this.canvas.width,
-            height: +this.canvas.height
-        };
+    drawSelection(x, bottom) {
+        const projection = [
+            1, 0, 0,
+            0, 1, 0,
+            x, (bottom / this.gl.viewport.height * 2), 1
+        ];
+        let color = new Color(this.color);
+        color.a = 128;
+
+        this.gl.stack = this.selectionStack;
+        this.gl.uniforms.projection = projection;
+        this.gl.uniforms.color = color.toArray();
+        this.gl.drawStrip(2);
     }
 
     /**
@@ -422,22 +454,15 @@ class LayoutDrawer {
      * @param {Object} bounds Graph drawer current bounds.
      * @param {Number} bottom Margin from the bottom (for dates).
      */
-    draw(bounds, maxBounds, bottom) {
+    draw(bottom) {
         //Update colors
-        this.lineColor = "rgba(" +
-            window.getComputedStyle(document.getElementsByClassName("page")[0])
-            .getPropertyValue("--color-text").trim() + ", 0.25)";
-        this.textColor = "rgba(" +
-            window.getComputedStyle(document.getElementsByClassName("page")[0])
-            .getPropertyValue("--color-text").trim() + ", 0.5)";
-
-        this.drawLines(bounds, maxBounds, bottom);
-
+        this.drawLines(bottom);
+        /*
         this.context.fillStyle = this.textColor;
         this.context.font = (bottom / 2) + "px " +
             window.getComputedStyle(document.getElementsByClassName("page")[0])["font-family"];
 
-        this.drawDates(bounds, maxBounds, bottom);
+        this.drawDates(bounds, maxBounds, bottom);*/
     }
 
     /**
@@ -446,19 +471,22 @@ class LayoutDrawer {
      * @param {Number} bottom Margin from the bottom (for dates).
      */
     drawLines(bottom) {
-        //Zoom: 1 / (end - start)
-        //Translation: start * zoom + offset
-        ///!!!ZOOM Y TO MATCH BOTTOM OFFSET
         const projection = [
             1, 0, 0,
             0, 1, 0,
-            0, bottom, 1
+            0, (bottom / this.gl.viewport.height * 2), 1
         ];
+        let color = new Color(this.color);
+        color.a = 128;
 
         this.gl.stack = this.linesStack;
         this.gl.uniforms.projection = projection;
-        this.gl.uniforms.color = new Color(200, 200, 200, 150);
-        this.gl.drawElements((this.lineCount * 2 - 1) * 6);
+        this.gl.uniforms.color = color.toArray();
+        this.gl.drawStrip(2);
+
+        color.a = 64;
+        this.gl.uniforms.color = color.toArray();
+        this.gl.drawStrip(this.lineCount * 2, 1);
     }
 
     /**
@@ -541,33 +569,4 @@ class LayoutDrawer {
 
         this.context.fillText(label, x, this.view.height + margin);
     }
-
-    /**
-     * Draws the selection line
-     * @param {Number} x Date of line coordinate.
-     * @param {Number} bottom Margin from the bottom (for dates).
-     */
-    drawSelection(x, bottom) {
-        //Zoom: 1 / (end - start)
-        //Translation: start * zoom + offset
-        ///!!!BOTTOM OFFSET IS NOT INPLEMENTED YET
-        const projection = [
-            1, 0, 0,
-            0, 1, 0,
-            x, bottom, 1
-        ];
-
-        this.gl.stack = this.selectionStack;
-        this.gl.uniforms.projection = projection;
-        this.gl.uniforms.color = new Color(200, 200, 200, 150);
-        ///!!!IMPLIMENT PROPER COUNT CONVERTION
-        this.gl.drawElements(1 * 6);
-    }
 }
-
-/**!!!
- * FOR CHARTDRAWER:
- * gl.uniforms.aspect = canvas.width / canvas.height;
- * gl.uniforms.thickness = 5 / canvas.height;
- * 
- */

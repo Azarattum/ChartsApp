@@ -10,6 +10,13 @@ class Color {
             return;
         }
 
+        if (param1 instanceof Color) {
+            this.r = param1.r;
+            this.g = param1.g;
+            this.b = param1.b;
+            this.a = param1.a;
+        }
+
         if (Number.isFinite(param1) && Number.isFinite(param2) &&
             Number.isFinite(param3)) {
             this.r = param1;
@@ -201,6 +208,10 @@ class Point {
     get length() {
         return Math.sqrt(this.x * this.x + this.y * this.y);
     }
+
+    toString() {
+        return this.x + "," + this.y;
+    }
 }
 
 class AnimationObject {
@@ -218,6 +229,24 @@ class AnimationObject {
     }
 
     /**
+     * Sets new animation goal from the current state.
+     * @param {Number} endProperty New end property value.
+     * @param {Number} duration How long the animation will be in milliseconds.
+     */
+    set(endProperty, duration = this.duration) {
+        const currentProperty = this.get();
+        if (endProperty.toString() == currentProperty.toString() ||
+            endProperty.toString() == this.endProperty.toString()) {
+            return;
+        }
+
+        this.startProperty = currentProperty;
+        this.startTime = Date.now();
+        this.duration = duration;
+        this.endProperty = endProperty;
+    }
+
+    /**
      * Returns the property value based on the past time.
      */
     get() {
@@ -225,20 +254,36 @@ class AnimationObject {
         if (timePast > this.duration) return this.endProperty;
 
         if (typeof this.startProperty == "number") {
-            return this.startProperty + ((timePast / this.duration) * (this.endProperty - this.startProperty));
-        } else if (this.startProperty instanceof Color) {
+            return this.interpolate(this.startProperty, this.endProperty, (timePast / this.duration));
+        } else if (Array.isArray(this.startProperty)) {
+            const progress = (timePast / this.duration);
+            let animated = [];
+            for (let i = 0; i < this.startProperty.length; i++) {
+                animated.push(
+                    this.interpolate(this.startProperty[i], this.endProperty[i], progress)
+                );
+            }
+            return animated;
+        }
+        else if (this.startProperty instanceof Color) {
+            const progress = (timePast / this.duration);
             return new Color(
-                this.startProperty.r + ((timePast / this.duration) * (this.endProperty.r - this.startProperty.r)),
-                this.startProperty.g + ((timePast / this.duration) * (this.endProperty.g - this.startProperty.g)),
-                this.startProperty.b + ((timePast / this.duration) * (this.endProperty.b - this.startProperty.b)),
-                this.startProperty.a + ((timePast / this.duration) * (this.endProperty.a - this.startProperty.a))
+                this.interpolate(this.startProperty.r, this.endProperty.r, progress),
+                this.interpolate(this.startProperty.g, this.endProperty.g, progress),
+                this.interpolate(this.startProperty.b, this.endProperty.b, progress),
+                this.interpolate(this.startProperty.a, this.endProperty.a, progress)
             );
         } else if (this.startProperty instanceof Point) {
+            const progress = (timePast / this.duration);
             return new Point(
-                this.startProperty.x + ((timePast / this.duration) * (this.endProperty.x - this.startProperty.x)),
-                this.startProperty.y + ((timePast / this.duration) * (this.endProperty.y - this.startProperty.y)),
+                this.interpolate(this.startProperty.x, this.endProperty.x, progress),
+                this.interpolate(this.startProperty.y, this.endProperty.y, progress)
             );
         }
+    }
+
+    interpolate(min, max, progress) {
+        return min + (progress * (max - min));
     }
 
     /**

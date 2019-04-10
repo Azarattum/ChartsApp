@@ -40,6 +40,7 @@ class Chart {
         let xAxis = source.columns[0];
         if (shift) xAxis.shift();
 
+        this.size = new Point(-Number.MAX_SAFE_INTEGER, -Number.MAX_SAFE_INTEGER);
         for (let i = 1; i < source.columns.length; i++) {
             let yAxis = source.columns[i];
             if (shift) yAxis.shift();
@@ -49,10 +50,19 @@ class Chart {
             const type = source.types[id];
 
             //Create a graph
-            this.graphs.push(
-                new Graph(xAxis, yAxis, color, name, type)
-            );
+            const graph = new Graph(xAxis, yAxis, color, name, type);
+            if (graph.size.x > this.size.x) {
+                this.size.x = graph.size.x;
+            }
+            if (graph.size.y > this.size.y) {
+                this.size.y = graph.size.y;
+            }
+            this.graphs.push(graph);
         }
+
+        ///FOR SINGLE Y!
+        //Calculate graph vertices according to the biggest size
+        this.graphs.forEach(x => x.calculateVertices(this.size));
         //#endregion
 
         console.debug("Chart created", this);
@@ -126,11 +136,14 @@ class Graph {
         /**Graph size.*/
         this.size = new Point(this.maxX - this.minX, this.maxY - this.minY);
 
-        this.vertices.forEach((point) => {
-            point.x = (point.x - this.minX) / this.size.x * 2 - 1;
-            point.y = (point.y - this.minY) / this.size.y * 2 - 1;
-        });
         //#endregion
         console.debug("Graph created", this);
+    }
+
+    calculateVertices(maxSize) {
+        this.vertices.forEach((point) => {
+            point.x = (point.x - this.minX) / maxSize.x * 2 - 1;
+            point.y = (point.y - this.minY) / maxSize.y * 2 - 1;
+        });
     }
 }

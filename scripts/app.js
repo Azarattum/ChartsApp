@@ -16,7 +16,17 @@ load({
     
     /*===================TESTS!===================*/
     chart = new Chart(data["chart"]);
-    drawer = new ChartDrawer(chart, canvas, program);
+    drawer = new ChartDrawer(chart, canvas, program, 32);
+    drawer.update(
+        new Color(
+            getComputedStyle(document.getElementsByClassName("page")[0])
+            .getPropertyValue("--color-background")
+        ),
+        new Color(
+            getComputedStyle(document.getElementsByClassName("page")[0])
+            .getPropertyValue("--color-text")
+        )
+    );
 
     requestAnimationFrame(draw);
 
