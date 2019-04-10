@@ -157,7 +157,10 @@ class Color {
 
 class Point {
     constructor(x = 0, y = 0) {
-        this.position = {x: x, y:y};
+        this.position = {
+            x: x,
+            y: y
+        };
     }
 
     get x() {
@@ -251,7 +254,7 @@ class AnimationObject {
      */
     get() {
         let timePast = Date.now() - this.startTime;
-        if (timePast > this.duration) return this.endProperty;
+        if (timePast >= this.duration) return this.endProperty;
 
         if (typeof this.startProperty == "number") {
             return this.interpolate(this.startProperty, this.endProperty, (timePast / this.duration));
@@ -264,8 +267,7 @@ class AnimationObject {
                 );
             }
             return animated;
-        }
-        else if (this.startProperty instanceof Color) {
+        } else if (this.startProperty instanceof Color) {
             const progress = (timePast / this.duration);
             return new Color(
                 this.interpolate(this.startProperty.r, this.endProperty.r, progress),

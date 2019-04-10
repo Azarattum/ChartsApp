@@ -3,7 +3,7 @@ class GraphDrawer {
      * Creates an object for drawing graphs.
      * @param {Graph} graph The graph to draw.
      */
-    constructor(graph, gl, bottom = 0) {
+    constructor(graph, gl) {
         //#region Properties
         /**The graph to draw.*/
         this.graph = graph;
@@ -12,8 +12,6 @@ class GraphDrawer {
             start: 0,
             end: 1
         };
-        /**Bottom offset (used to create space for the legend)*/
-        this.bottom = bottom;
         /**Whether the graph is visible or not.*/
         this.baseColor = this.graph.color;
         /**Drawing GL object.*/
@@ -67,7 +65,8 @@ class GraphDrawer {
     }
 
     set color(value) {
-        this.baseColor = new AnimationObject(this.color, value, ANIMATION_PERIOD);
+        this.baseColor = new AnimationObject(this.color, value, ANIMATION_PERIOD / 2);
+        this.redraw = true;
     }
 
     get color() {
@@ -123,11 +122,10 @@ class GraphDrawer {
     draw(maxY, start, end) {
         //Zoom: 1 / (end - start), (2 - offset) / (top + 1)
         //Translation: (1 - end - start) * zoom, 
-        console.log("Max Y:", maxY, "Start:", start, "End:", end);
         const zoomX = 1 / (this.end - this.start);
-        const zoomY = 2 * (1 - (this.bottom / this.gl.viewport.height)) / (maxY + 1);
+        const zoomY = 2 / (maxY + 1);
         const moveX = (1 - this.start - this.end) * zoomX;
-        const moveY = (this.bottom / this.gl.viewport.height * 2) + (zoomY - 1);
+        const moveY = zoomY - 1;
         let projection = [
             zoomX, 0, 0,
             0, zoomY, 0,
@@ -137,21 +135,26 @@ class GraphDrawer {
         if (this.projection == null) {
             this.projection = new AnimationObject(projection);
         } else {
-            this.projection.set(projection, 200);
+            this.projection.set(projection, ANIMATION_PERIOD / 2);
+        }
+        if (this.cuts == null) {
+            this.cuts = new AnimationObject([start, end]);
+        } else {
+            this.cuts.set([start, end], ANIMATION_PERIOD / 2);
         }
 
         this.gl.stack = this.stack;
         this.gl.uniforms.projection = this.projection.get();
         this.gl.uniforms.color = this.color.toArray();
 
+        start = Math.floor(this.cuts.get()[0]);
+        end = Math.ceil(this.cuts.get()[1]);
         //Left additional points off the screen to avoid artifacts
-        for (let i = 0; i < 10; i++) {
-            if (end < this.graph.points.length) end++;
-            if (start > 0) start--;
-        }
+        if (end < this.graph.points.length) end++;
+        if (start > 0) start--;
 
         this.gl.drawElements((end - 1) * 6, start * 6);
-        if (!this.color.inProgress && !this.projection.inProgress) {
+        if (!this.baseColor.inProgress && !this.projection.inProgress && !this.cuts.inProgress) {
             this.redraw = false;
         }
     }
@@ -162,10 +165,12 @@ class ChartDrawer {
      * Creates an object for drawing charts.
      * @param {Chart} chart The chart to draw.
      */
-    constructor(chart, canvas, program, bottom = 0) {
+    constructor(chart, canvas, program, layout = null) {
         //#region Properties
-        /**Drawing canvas.*/
+        /**Chart canvas.*/
         this.canvas = canvas;
+        /**Layout canvas.*/
+        this.layoutCanvas = layout;
         /**GL Object.*/
         this.gl = new GL(canvas, program);
         /**Graph drawer objects.*/
@@ -180,11 +185,9 @@ class ChartDrawer {
         /**Whether the chart needs to redraw.*/
         this.redraw = true;
         /**Layout drawer object.*/
-        this.layoutDrawer = new LayoutDrawer(canvas, this.gl);
+        this.layoutDrawer = new LayoutDrawer(layout, this.gl);
         /**Whether draw layout or not.*/
-        this.layout = true;
-        /**The user defined offsets.*/
-        this.bottom = bottom;
+        this.layout = !!layout;
         //#endregion
 
         //Perform initial update
@@ -192,7 +195,7 @@ class ChartDrawer {
 
         //Initilizing graph drawers
         for (const graph of chart.graphs) {
-            this.graphDrawers.push(new GraphDrawer(graph, this.gl, bottom));
+            this.graphDrawers.push(new GraphDrawer(graph, this.gl));
         }
 
         console.debug("ChartDrawer created", this);
@@ -260,6 +263,8 @@ class ChartDrawer {
      * Updates sizes and colors.
      */
     update(backgroundColor, textColor) {
+        this.layoutCanvas.width = this.layoutCanvas.clientWidth * window.devicePixelRatio;
+        this.layoutCanvas.height = this.layoutCanvas.clientHeight * window.devicePixelRatio;
         this.gl.resize();
         this.gl.uniforms.aspect = this.gl.viewport.width / this.gl.viewport.height;
         this.gl.uniforms.thickness = 5 / this.canvas.height;
@@ -327,6 +332,7 @@ class ChartDrawer {
             }
             //Calculate local maximum ans minimum
             for (const drawer of this.graphDrawers) {
+                if (!drawer.visible) continue;
                 const graphVertex = drawer.graph.vertices[index];
                 if (graphVertex.y > maxY) {
                     maxY = graphVertex.y;
@@ -351,11 +357,11 @@ class ChartDrawer {
     draw() {
         const drawingData = this.calculate();
 
-        if (this.redraw || this.graphDrawers.some(x => x.redraw)) {
+        if (this.layoutDrawer.redraw || this.redraw || this.graphDrawers.some(x => x.redraw)) {
             this.gl.clear();
+            if (this.layout) this.drawLayout(this.graphDrawers[0].projection);
             if (this.layout) this.drawSelection(drawingData.selection);
             this.drawGraphs(drawingData.top, drawingData.start, drawingData.end);
-            if (this.layout) this.drawLayout();
         }
         this.redraw = false;
     }
@@ -372,8 +378,8 @@ class ChartDrawer {
     /**
      * Draws the layout for the chart.
      */
-    drawLayout() {
-        this.layoutDrawer.draw(this.bottom);
+    drawLayout(projection) {
+        this.layoutDrawer.draw(projection);
     }
 
     /**
@@ -381,7 +387,7 @@ class ChartDrawer {
      */
     drawSelection(x) {
         if (x != null) {
-            this.layoutDrawer.drawSelection(x, this.bottom);
+            this.layoutDrawer.drawSelection(x);
         }
     }
 }
@@ -401,6 +407,9 @@ class LayoutDrawer {
         this.dateCount = 7;
         this.dateScale = 4;
         this.color = new Color();
+        this.lineFade = new AnimationObject(64);
+        this.lineOffset = new AnimationObject(0);
+        this.redraw = true;
         //#endregion
 
         /**Selection stack id*/
@@ -432,13 +441,12 @@ class LayoutDrawer {
     /**
      * Draws the selection line
      * @param {Number} x Date of line coordinate.
-     * @param {Number} bottom Margin from the bottom (for dates).
      */
-    drawSelection(x, bottom) {
+    drawSelection(x) {
         const projection = [
             1, 0, 0,
             0, 1, 0,
-            x, (bottom / this.gl.viewport.height * 2), 1
+            x, 0, 1
         ];
         let color = new Color(this.color);
         color.a = 128;
@@ -452,40 +460,58 @@ class LayoutDrawer {
     /**
      * Draws the layout.
      * @param {Object} bounds Graph drawer current bounds.
-     * @param {Number} bottom Margin from the bottom (for dates).
      */
-    draw(bottom) {
+    draw(projection) {
         //Update colors
-        this.drawLines(bottom);
+        this.drawLines(projection);
         /*
         this.context.fillStyle = this.textColor;
         this.context.font = (bottom / 2) + "px " +
             window.getComputedStyle(document.getElementsByClassName("page")[0])["font-family"];
 
         this.drawDates(bounds, maxBounds, bottom);*/
+        if (!this.lineFade.inProgress && !this.lineOffset.inProgress) {
+            this.redraw = false;
+        }
     }
 
     /**
      * Draws layout lines.
      * @param {Object} bounds Graph drawer current bounds.
-     * @param {Number} bottom Margin from the bottom (for dates).
      */
-    drawLines(bottom) {
+    drawLines(graphProjection) {
+        const move = graphProjection ? graphProjection.get()[7] : 0;
+        const scale = graphProjection ? graphProjection.get()[4] : 0;
         const projection = [
             1, 0, 0,
             0, 1, 0,
-            0, (bottom / this.gl.viewport.height * 2), 1
+            0, 0, 1
         ];
         let color = new Color(this.color);
-        color.a = 128;
+        color.a = 192;
 
         this.gl.stack = this.linesStack;
         this.gl.uniforms.projection = projection;
         this.gl.uniforms.color = color.toArray();
         this.gl.drawStrip(2);
 
+        projection[7] = move % ((this.lineCount - 1) * 2 / this.lineCount);//+ + this.lineFade.get() / this.gl.viewport.height;// * Math.pow(-1, Math.round(move / 2));
+        //console.log(projection[7]);
+        let pos = projection[7] % (2 / 6);
+        console.log("pos", projection[7] - pos);
+        if (graphProjection && !graphProjection.inProgress && !this.lineOffset.inProgress) {
+            this.lineOffset.set(pos, ANIMATION_PERIOD / 2);
+            this.redraw = true;
+        }
+        projection[7] -= this.lineOffset.get();
+
         color.a = 64;
+        this.gl.uniforms.projection = projection;
         this.gl.uniforms.color = color.toArray();
+        this.gl.drawStrip(this.lineCount * 2, 1);
+
+        projection[7] -= (this.lineCount - 1) * 2 / this.lineCount;
+        this.gl.uniforms.projection = projection;
         this.gl.drawStrip(this.lineCount * 2, 1);
     }
 
