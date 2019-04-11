@@ -419,7 +419,6 @@ class LayoutDrawer {
         this.lineOffset = new AnimationObject(0);
         this.dateFade = [];
         this.dateOffset = new AnimationObject(0);
-        this.dateStart = 0;
         this.redraw = true;
         //#endregion
 
@@ -558,67 +557,45 @@ class LayoutDrawer {
      */
     drawDates(graphProjection, chart, area) {
         let color = new Color(this.color);
-        color.a = 128;
         const scale = graphProjection ? graphProjection.get()[0] : 1;
         const dateSpace = this.canvas.width / (this.dateCount - 1);
         const margin = ((this.canvas.height - this.gl.canvas.height) / 2);
+        const ratio = chart.size.x / this.canvas.width;
         const y = this.canvas.height - margin / 1.5;
+
         this.context.font = margin + "px " + this.font;
         
-        if (area.start == this.dateStart) {
-            this.dateOffset.set(-area.start * this.canvas.width * scale, 0);
-        } else {
-            this.dateOffset.set(-area.start * this.canvas.width * scale, ANIMATION_PERIOD / 2);
-        }
+        this.dateOffset.set(-area.start * this.canvas.width, ANIMATION_PERIOD / 2);
         this.context.fillStyle = color.toString();
-        this.dateStart = area.start;
 
-        //Draw initial dates
-        for (let i = 0; i < this.dateCount; i++) {
-            const x = dateSpace * scale * i + this.dateOffset.get();
-            if (x > this.canvas.width) continue;
-            if ((x + margin * 2) < 0) continue;
-
-            this.context.fillText("kek", x, y);
-        }
-
-        //Draw additional subdates
-        for (let j = 2; j < scale || (this.dateFade[j] && this.dateFade[j].get()); j*=2) {
+        //Draw dates
+        for (let j = 1; j < scale || (this.dateFade[j] && this.dateFade[j].get()); j*=2) {
             if (this.dateFade[j] == undefined) {
                 this.dateFade[j] = new AnimationObject(128);
             }
-            if (scale > j && !this.dateFade[j].inProgress) {
+            if (scale > j && !this.dateFade[j].inProgress && j != 1) {
                 this.dateFade[j].set(128, ANIMATION_PERIOD);
                 this.redraw = true;
-            } else if (!this.dateFade[j].inProgress) {
+            } else if (!this.dateFade[j].inProgress && j != 1) {
                 this.dateFade[j].set(0, ANIMATION_PERIOD);
                 this.redraw = true;
             }
             color.a = this.dateFade[j].get();
     
             this.context.fillStyle = color.toString();
-            for (let i = 1; i < this.dateCount * j; i+=2) {
-                const x = dateSpace * scale * i / j + this.dateOffset.get();
+            for (let i = (j == 1 ? 0 : 1); i < this.dateCount * j; i+=(j == 1 ? 1 : 2)) {
+                let x = dateSpace * scale * i / j;
+                let label = Math.round(chart.offsets.x + x * ratio / scale);
+                x += this.dateOffset.get() * scale;
+
                 if (x > this.canvas.width) continue;
                 if ((x + margin * 2) < 0) continue;
 
-                this.context.fillText("kek", x, y);
+                label = (new Date(label)).toString().split(' ')[1] + " " +
+                    (new Date(label)).toString().split(' ')[2];
+
+                this.context.fillText(label, x, y);
             }
         }
-    }
-
-    /**
-     * Draws the date based on graph bounds and provided coordinate.
-     * @param {Object} bounds Graph bounds.
-     * @param {Number} ratio Ratio between bounds size and viewing size.
-     * @param {Number} margin Bottom magin.
-     * @param {Number} x Coordinate to draw.
-     */
-    drawDate(bounds, ratio, margin, x) {
-        let label = Math.round(bounds.left + x * ratio);
-        label = (new Date(label)).toString().split(' ')[1] + " " +
-            (new Date(label)).toString().split(' ')[2];
-
-        this.context.fillText(label, x, this.view.height + margin);
     }
 }

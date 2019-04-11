@@ -78,8 +78,9 @@ body,
 #render>#chart {
     position: absolute;
     width: 100%;
-    height: calc(100% - 32px);
+    height: calc(100% - 24px);
 }
+
 #render>#layout {
     position: absolute;
     width: 100%;
