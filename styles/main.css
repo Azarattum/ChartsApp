@@ -181,7 +181,7 @@ body,
     top: 0;
     left: 0;
     height: calc(100% - var(--border) * 2);
-    min-width: 72px;
+    min-width: 48px;
     max-width: calc(100% - var(--border) * 8);
 
     border: var(--border) solid rgba(var(--color-text), 0.2);

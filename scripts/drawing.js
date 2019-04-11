@@ -386,7 +386,7 @@ class ChartDrawer {
      * Draws the layout for the chart.
      */
     drawLayout() {
-        this.layoutDrawer.draw(this.graphDrawers[0].projection, this.chart);
+        this.layoutDrawer.draw(this.graphDrawers[0].projection, this.chart, this.area);
     }
 
     /**
@@ -417,6 +417,9 @@ class LayoutDrawer {
         this.font = "Helvetica";
         this.lineFade = new AnimationObject(64);
         this.lineOffset = new AnimationObject(0);
+        this.dateFade = [];
+        this.dateOffset = new AnimationObject(0);
+        this.dateStart = 0;
         this.redraw = true;
         //#endregion
 
@@ -437,8 +440,6 @@ class LayoutDrawer {
             directions.push(0);
             directions.push(0);
         }
-
-        let path = new Path(lines);
 
         this.gl.attributes.position = lines;
         this.gl.attributes.direction = directions;
@@ -469,16 +470,12 @@ class LayoutDrawer {
      * Draws the layout.
      * @param {Object} bounds Graph drawer current bounds.
      */
-    draw(projection, chart) {
+    draw(projection, chart, area) {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.drawLines(projection, chart);
-        /*
-        this.context.fillStyle = this.textColor;
-        this.context.font = (bottom / 2) + "px " +
-            window.getComputedStyle(document.getElementsByClassName("page")[0])["font-family"];
-
-        this.drawDates(bounds, maxBounds, bottom);*/
-        if (!this.lineFade.inProgress && !this.lineOffset.inProgress) {
+        this.drawDates(projection, chart, area);
+        if (!this.lineFade.inProgress && !this.lineOffset.inProgress &&
+            !this.dateFade.some(x => x.inProgress) && !this.dateOffset.inProgress) {
             this.redraw = false;
         }
     }
@@ -559,64 +556,54 @@ class LayoutDrawer {
      * @param {Object} bounds Graph drawer current bounds.
      * @param {Number} bottom Margin from the bottom (for dates).
      */
-    drawDates(bounds, maxBounds, bottom) {
-        const margin = (bottom / 2) + (bottom - (bottom / 2)) / 2 - bottom;
-        const left = bounds.left - maxBounds.left;
+    drawDates(graphProjection, chart, area) {
+        let color = new Color(this.color);
+        color.a = 128;
+        const scale = graphProjection ? graphProjection.get()[0] : 1;
+        const dateSpace = this.canvas.width / (this.dateCount - 1);
+        const margin = ((this.canvas.height - this.gl.canvas.height) / 2);
+        const y = this.canvas.height - margin / 1.5;
+        this.context.font = margin + "px " + this.font;
+        
+        if (area.start == this.dateStart) {
+            this.dateOffset.set(-area.start * this.canvas.width * scale, 0);
+        } else {
+            this.dateOffset.set(-area.start * this.canvas.width * scale, ANIMATION_PERIOD / 2);
+        }
+        this.context.fillStyle = color.toString();
+        this.dateStart = area.start;
 
-        const size = (bounds.right - bounds.left);
-        const spacing = this.view.width / (this.dateCount - 1);
-        const area = size / (this.dateCount - 1);
-
-        const maxSize = (maxBounds.right - maxBounds.left);
-        const zoom = size / maxSize;
-        const ratio = size / this.view.width;
-
-        const offset = ((left * zoom) % area) / ratio;
-
-        let scale = 1 / Math.pow(2, this.dateScale + 1);
-
+        //Draw initial dates
         for (let i = 0; i < this.dateCount; i++) {
-            let x = spacing / Math.pow(2, this.dateScale) * i;
-            let x0 = x;
+            const x = dateSpace * scale * i + this.dateOffset.get();
+            if (x > this.canvas.width) continue;
+            if ((x + margin * 2) < 0) continue;
 
-            x -= offset;
+            this.context.fillText("kek", x, y);
+        }
 
-            for (let s = Math.pow(2, this.dateScale); s >= 2; s /= 2) {
-                let expected = Math.pow(2, (this.dateScale - Math.log2(s)));
-                if (expected > this.dateCount) {
-                    expected = expected % this.dateCount;
-                } else if (expected == this.dateCount) {
-                    expected = 1;
-                }
-
-                let modulo = (i % (expected * 2)) - (i % expected);
-
-                if (zoom > (1 / s)) {
-                    scale = (1 / s);
-                    if (modulo == expected) {
-                        x += spacing * (this.dateCount / s);
-                        x0 += spacing * (this.dateCount / s);
-                    }
-                }
+        //Draw additional subdates
+        for (let j = 2; j < scale || (this.dateFade[j] && this.dateFade[j].get()); j*=2) {
+            if (this.dateFade[j] == undefined) {
+                this.dateFade[j] = new AnimationObject(128);
             }
-
-            while (x / scale < (-bottom * 3)) {
-                x += spacing * (this.dateCount * scale * 2);
-                x0 += spacing * (this.dateCount * scale * 2);
+            if (scale > j && !this.dateFade[j].inProgress) {
+                this.dateFade[j].set(128, ANIMATION_PERIOD);
+                this.redraw = true;
+            } else if (!this.dateFade[j].inProgress) {
+                this.dateFade[j].set(0, ANIMATION_PERIOD);
+                this.redraw = true;
             }
+            color.a = this.dateFade[j].get();
+    
+            this.context.fillStyle = color.toString();
+            for (let i = 1; i < this.dateCount * j; i+=2) {
+                const x = dateSpace * scale * i / j + this.dateOffset.get();
+                if (x > this.canvas.width) continue;
+                if ((x + margin * 2) < 0) continue;
 
-            x /= zoom;
-            x0 /= zoom;
-
-            const int = 1 / zoom;
-            const min = 1 / scale / 2;
-            const max = 1 / scale;
-            if ((int - min) / (max - min) < 0.25 && scale < 0.5) {
-                this.context.globalAlpha = ((x0 + spacing) % (spacing * 2)) / (spacing / 4);
+                this.context.fillText("kek", x, y);
             }
-
-            this.drawDate(bounds, ratio, margin, x);
-            this.context.globalAlpha = 1;
         }
     }
 
