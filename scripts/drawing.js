@@ -513,8 +513,8 @@ class LayoutDrawer {
         this.gl.uniforms.projection = projection;
         this.gl.uniforms.color = color.toArray();
         this.gl.drawStrip(this.lineCount * 2, 1);
-        ///NOT TRUE
-        const graphValue = chart.size.y / scale / this.lineCount;
+        
+        const graphValue = chart.size.y / scale;
         this.drawValues(projection[7], color, graphValue);
 
         color.a = 64 - this.lineFade.get();
@@ -526,7 +526,6 @@ class LayoutDrawer {
     }
 
     drawValues(y, color, graphValue) {
-        ///WRONG VALUE CALCULATION!!!
         let textColor = new Color(color);
         textColor.a *= 2;
         y *= this.gl.canvas.height / 2;
@@ -536,9 +535,17 @@ class LayoutDrawer {
         this.context.font = (this.gl.canvas.height / this.lineCount / 4) + "px " +
             window.getComputedStyle(document.getElementsByClassName("page")[0])["font-family"]; ///HARDCODDED PROPERTY!
             
+        ///SIMPLIFY EQUATIONS!
         for (let i = 1; i < this.lineCount; i++) {
-            let label = Math.round(graphValue * (this.lineCount - i));
-            this.context.fillText(label, 0, - y + (i * this.gl.canvas.height / this.lineCount));
+            const textY = - y + (i * this.gl.canvas.height / this.lineCount);
+            if (textY > this.gl.canvas.height) continue;
+            let label = (this.gl.canvas.height - textY) / this.gl.canvas.height * graphValue;
+            //Format value
+            if (Math.abs(label) > 1000000000) label = (label / 1000000000).toFixed(2) + "B";
+            else if (Math.abs(label) > 1000000) label = (label / 1000000).toFixed(2) + "M";
+            else if (Math.abs(label) > 1000) label = (label / 1000).toFixed(1) + "K";
+        
+            this.context.fillText(label, 0, textY);
         }
     }
 
