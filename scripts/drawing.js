@@ -264,7 +264,7 @@ class ChartDrawer {
     /**
      * Updates sizes and colors.
      */
-    update(backgroundColor, textColor) {
+    update(backgroundColor, textColor, textFont) {
         this.layoutCanvas.width = this.layoutCanvas.clientWidth * window.devicePixelRatio;
         this.layoutCanvas.height = this.layoutCanvas.clientHeight * window.devicePixelRatio;
         this.gl.resize();
@@ -275,6 +275,9 @@ class ChartDrawer {
         }
         if (textColor) {
             this.layoutDrawer.color = textColor;
+        }
+        if (textFont) {
+            this.layoutDrawer.font = textFont;
         }
         this.redraw = true;
     }
@@ -411,6 +414,7 @@ class LayoutDrawer {
         this.dateCount = 7;
         this.dateScale = 4;
         this.color = new Color();
+        this.font = "Helvetica";
         this.lineFade = new AnimationObject(64);
         this.lineOffset = new AnimationObject(0);
         this.redraw = true;
@@ -427,7 +431,7 @@ class LayoutDrawer {
 
         let lines = [];
         let directions = [];
-        for (let i = 0; i < this.lineCount; i++) {
+        for (let i = 0; i < this.lineCount + 1; i++) {
             lines.push(-1.1 * Math.pow(-1, i), 2 / this.lineCount * i - 1);
             lines.push(1.1 * Math.pow(-1, i), 2 / this.lineCount * i - 1);
             directions.push(0);
@@ -512,7 +516,7 @@ class LayoutDrawer {
         color.a = this.lineFade.get();
         this.gl.uniforms.projection = projection;
         this.gl.uniforms.color = color.toArray();
-        this.gl.drawStrip(this.lineCount * 2, 1);
+        this.gl.drawStrip((this.lineCount + 1) * 2, 1);
         
         const graphValue = chart.size.y / scale;
         this.drawValues(projection[7], color, graphValue);
@@ -521,24 +525,24 @@ class LayoutDrawer {
         projection[7] -= 1 / this.lineCount;
         this.gl.uniforms.projection = projection;
         this.gl.uniforms.color = color.toArray();
-        this.gl.drawStrip(this.lineCount * 2, 1);
+        this.gl.drawStrip((this.lineCount + 1) * 2, 1);
         this.drawValues(projection[7], color, graphValue);
     }
 
     drawValues(y, color, graphValue) {
+        const lineSpace = this.gl.canvas.height / this.lineCount;
         let textColor = new Color(color);
         textColor.a *= 2;
         y *= this.gl.canvas.height / 2;
         y += 3 * window.devicePixelRatio;
 
         this.context.fillStyle = textColor.toString();
-        this.context.font = (this.gl.canvas.height / this.lineCount / 4) + "px " +
-            window.getComputedStyle(document.getElementsByClassName("page")[0])["font-family"]; ///HARDCODDED PROPERTY!
+        this.context.font = lineSpace / 4 + "px " + this.font;
             
-        ///SIMPLIFY EQUATIONS!
-        for (let i = 1; i < this.lineCount; i++) {
-            const textY = - y + (i * this.gl.canvas.height / this.lineCount);
+        for (let i = 0; i < this.lineCount; i++) {
+            const textY = - y + i * lineSpace;
             if (textY > this.gl.canvas.height) continue;
+            if (textY - lineSpace / 4 < 0) continue;
             let label = (this.gl.canvas.height - textY) / this.gl.canvas.height * graphValue;
             //Format value
             if (Math.abs(label) > 1000000000) label = (label / 1000000000).toFixed(2) + "B";

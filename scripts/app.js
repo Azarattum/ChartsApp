@@ -26,7 +26,8 @@ load({
         new Color(
             getComputedStyle(document.getElementsByClassName("page")[0])
             .getPropertyValue("--color-text")
-        )
+        ),
+        getComputedStyle(document.getElementsByClassName("page")[0])["font-family"]
     );
 
     //Get elements
