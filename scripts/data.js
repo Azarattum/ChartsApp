@@ -41,6 +41,7 @@ class Chart {
         if (shift) xAxis.shift();
 
         this.size = new Point(-Number.MAX_SAFE_INTEGER, -Number.MAX_SAFE_INTEGER);
+        this.offsets = new Point(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
         for (let i = 1; i < source.columns.length; i++) {
             let yAxis = source.columns[i];
             if (shift) yAxis.shift();
@@ -57,12 +58,18 @@ class Chart {
             if (graph.size.y > this.size.y) {
                 this.size.y = graph.size.y;
             }
+            if (graph.minX < this.offsets.x) {
+                this.offsets.x = graph.minX;
+            }
+            if (graph.minY < this.offsets.y) {
+                this.offsets.y = graph.minY;
+            }
             this.graphs.push(graph);
         }
 
         ///FOR SINGLE Y!
         //Calculate graph vertices according to the biggest size
-        this.graphs.forEach(x => x.calculateVertices(this.size));
+        this.graphs.forEach(x => x.calculateVertices(this.size, this.offsets));
         //#endregion
 
         console.debug("Chart created", this);
@@ -140,10 +147,10 @@ class Graph {
         console.debug("Graph created", this);
     }
 
-    calculateVertices(maxSize) {
+    calculateVertices(maxSize, minSize) {
         this.vertices.forEach((point) => {
-            point.x = (point.x - this.minX) / maxSize.x * 2 - 1;
-            point.y = (point.y - this.minY) / maxSize.y * 2 - 1;
+            point.x = (point.x - minSize.x) / maxSize.x * 2 - 1;
+            point.y = (point.y - minSize.y) / maxSize.y * 2 - 1;
         });
     }
 }

@@ -167,6 +167,8 @@ class ChartDrawer {
      */
     constructor(chart, canvas, program, layout = null) {
         //#region Properties
+        /**Chart object.*/
+        this.chart = chart;
         /**Chart canvas.*/
         this.canvas = canvas;
         /**Layout canvas.*/
@@ -359,8 +361,10 @@ class ChartDrawer {
 
         if (this.layoutDrawer.redraw || this.redraw || this.graphDrawers.some(x => x.redraw)) {
             this.gl.clear();
-            if (this.layout) this.drawLayout(this.graphDrawers[0].projection);
-            if (this.layout) this.drawSelection(drawingData.selection);
+            if (this.layout) {
+                this.drawLayout();
+                this.drawSelection(drawingData.selection);
+            }
             this.drawGraphs(drawingData.top, drawingData.start, drawingData.end);
         }
         this.redraw = false;
@@ -378,8 +382,8 @@ class ChartDrawer {
     /**
      * Draws the layout for the chart.
      */
-    drawLayout(projection) {
-        this.layoutDrawer.draw(projection);
+    drawLayout() {
+        this.layoutDrawer.draw(this.graphDrawers[0].projection, this.chart);
     }
 
     /**
@@ -461,9 +465,9 @@ class LayoutDrawer {
      * Draws the layout.
      * @param {Object} bounds Graph drawer current bounds.
      */
-    draw(projection) {
-        //Update colors
-        this.drawLines(projection);
+    draw(projection, chart) {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.drawLines(projection, chart);
         /*
         this.context.fillStyle = this.textColor;
         this.context.font = (bottom / 2) + "px " +
@@ -479,9 +483,9 @@ class LayoutDrawer {
      * Draws layout lines.
      * @param {Object} bounds Graph drawer current bounds.
      */
-    drawLines(graphProjection) {
+    drawLines(graphProjection, chart) {
         const move = graphProjection ? graphProjection.get()[7] : 0;
-        const scale = graphProjection ? graphProjection.get()[4] : 0;
+        const scale = graphProjection ? graphProjection.get()[4] : 1;
         const projection = [
             1, 0, 0,
             0, 1, 0,
@@ -509,12 +513,33 @@ class LayoutDrawer {
         this.gl.uniforms.projection = projection;
         this.gl.uniforms.color = color.toArray();
         this.gl.drawStrip(this.lineCount * 2, 1);
+        ///NOT TRUE
+        const graphValue = chart.size.y / scale / this.lineCount;
+        this.drawValues(projection[7], color, graphValue);
 
         color.a = 64 - this.lineFade.get();
         projection[7] -= 1 / this.lineCount;
         this.gl.uniforms.projection = projection;
         this.gl.uniforms.color = color.toArray();
         this.gl.drawStrip(this.lineCount * 2, 1);
+        this.drawValues(projection[7], color, graphValue);
+    }
+
+    drawValues(y, color, graphValue) {
+        ///WRONG VALUE CALCULATION!!!
+        let textColor = new Color(color);
+        textColor.a *= 2;
+        y *= this.gl.canvas.height / 2;
+        y += 3 * window.devicePixelRatio;
+
+        this.context.fillStyle = textColor.toString();
+        this.context.font = (this.gl.canvas.height / this.lineCount / 4) + "px " +
+            window.getComputedStyle(document.getElementsByClassName("page")[0])["font-family"]; ///HARDCODDED PROPERTY!
+            
+        for (let i = 1; i < this.lineCount; i++) {
+            let label = Math.round(graphValue * (this.lineCount - i));
+            this.context.fillText(label, 0, - y + (i * this.gl.canvas.height / this.lineCount));
+        }
     }
 
     /**
