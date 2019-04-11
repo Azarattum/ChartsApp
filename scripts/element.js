@@ -1,10 +1,85 @@
 class ChartElement {
     constructor(container) {
+        this.initializeComponent();
+    }
+    
+    initializeComponent() {
+        //Title
+        this.title = document.createElement("span");
+        
+        this.title.className = "chart-title";
+        
+        //Tooltip
+        this.tootip = document.createElement("div");
+        this.date = document.createElement("span");
+        this.values = document.createElement("div");
+        
+        this.tooltip.className = "chart-tooltip";
+        this.date.className = "chart-tooltip-date";
+        this.values.className = "chart-tooltip-values";
+        
+        this.tooltip.appendChild(this.date);
+        this.tooltip.appendChild(this.values);
+        
+        //Render
+        this.render = document.createElement("div");
+        this.chart = document.createElement("canvas");
+        this.layout = document.createElement("canvas");
+        
+        this.render.className = "chart-render";
+        this.chart.className = "chart-render-chart";
+        this.layout.className = "chart-render-layout";
+        
+        this.render.appendChild(this.chart);
+        this.render.appendChild(this.layout);
+        
+        //Preview
+        this.control = document.createElement("div");
+        this.preview = document.createElement("canvas");
+        this.select = document.createElement("div");
+        this.draggerLeft = document.createElement("div");
+        this.draggerRight = document.createElement("div");
+        this.coverLeft = document.createElement("div");
+        this.coverRight = document.createElement("div");
+        
+        this.control.className = "chart-control";
+        this.preview.className = "chart-preview";
+        this.select.className = "chart-select";
+        this.draggerLeft.className = "chart-dragger chart-dragger-left";
+        this.draggerRight.className = "chart-dragger chart-dragger-right";
+        this.coverLeft.className = "chart-cover chart-cover-left";
+        this.coverRight.className = "chart-cover chart-cover-right";
+        
+        this.control.appendChild(this.preview);
+        this.control.appendChild(this.coverLeft);
+        this.control.appendChild(this.select);
+        this.select.appendChild(this.draggerLeft);
+        this.select.appendChild(this.draggerRight);
+        this.control.appendChild(this.coverRight);
+        
+        //Graph buttons container
+        this.graphs = document.createElement("div");
 
+        this.graphs.className = "chart-graphs";
+        
+        //Main container
+        this.container = document.createElement("div");
+        
+        this.container.className = "chart-container";
+        
+        this.container.appendChild(this.tootip);
+        this.container.appendChild(this.tootip);
+        this.container.appendChild(this.render);
+        this.container.appendChild(this.control);
+        this.container.appendChild(this.graphs);
+    }
+
+    initializeStyle() {
+        
     }
 
     set chart(chart) {
-
+        
     }
 }
 
