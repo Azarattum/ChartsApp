@@ -544,6 +544,7 @@ class LayoutDrawer {
             if (Math.abs(label) > 1000000000) label = (label / 1000000000).toFixed(2) + "B";
             else if (Math.abs(label) > 1000000) label = (label / 1000000).toFixed(2) + "M";
             else if (Math.abs(label) > 1000) label = (label / 1000).toFixed(1) + "K";
+            else label = Math.round(label);
         
             this.context.fillText(label, 0, textY);
         }
