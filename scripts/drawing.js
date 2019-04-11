@@ -529,9 +529,7 @@ class LayoutDrawer {
         const lineSpace = this.gl.canvas.height / this.lineCount;
         let textColor = new Color(color);
         textColor.a *= 2;
-        y *= this.gl.canvas.height / 2;
-        y += 3 * window.devicePixelRatio;
-
+        y = y * this.gl.canvas.height / 2 + 3 * window.devicePixelRatio;
         this.context.fillStyle = textColor.toString();
         this.context.font = lineSpace / 4 + "px " + this.font;
             
@@ -541,9 +539,10 @@ class LayoutDrawer {
             if (textY - lineSpace / 4 < 0) continue;
             let label = (this.gl.canvas.height - textY) / this.gl.canvas.height * graphValue;
             //Format value
-            if (Math.abs(label) > 1000000000) label = (label / 1000000000).toFixed(2) + "B";
-            else if (Math.abs(label) > 1000000) label = (label / 1000000).toFixed(2) + "M";
-            else if (Math.abs(label) > 1000) label = (label / 1000).toFixed(1) + "K";
+            const absolute = Math.abs(label);
+            if (absolute > 1000000000) label = (label / 1000000000).toFixed(2) + "B";
+            else if (absolute > 1000000) label = (label / 1000000).toFixed(2) + "M";
+            else if (absolute > 1000) label = (label / 1000).toFixed(1) + "K";
             else label = Math.round(label);
         
             this.context.fillText(label, 0, textY);
@@ -589,7 +588,7 @@ class LayoutDrawer {
                 x += this.dateOffset.get() * scale;
 
                 if (x > this.canvas.width) continue;
-                if ((x + margin * 2) < 0) continue;
+                if ((x + margin * 4) < 0) continue;
 
                 label = (new Date(label)).toString().split(' ')[1] + " " +
                     (new Date(label)).toString().split(' ')[2];
