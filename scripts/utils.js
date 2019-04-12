@@ -6,15 +6,17 @@ class Color {
             b: 0,
             a: 255
         };
-        if (param1 === undefined) {
+
+        if (param1 instanceof Color) {
+            this.color.r = param1.r;
+            this.color.g = param1.g;
+            this.color.b = param1.b;
+            this.color.a = param1.a;
             return;
         }
 
-        if (param1 instanceof Color) {
-            this.r = param1.r;
-            this.g = param1.g;
-            this.b = param1.b;
-            this.a = param1.a;
+        if (param1 === undefined) {
+            return;
         }
 
         if (Number.isFinite(param1) && Number.isFinite(param2) &&
