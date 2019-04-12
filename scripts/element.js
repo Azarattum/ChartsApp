@@ -91,6 +91,8 @@ class ChartElement {
     initializeStyle() {
         this.elements.container.style.font = this.styles.font;
 
+        
+
         this.elements.title.style.display = "block";
         this.elements.title.style.fontWeight = "bold";
         this.elements.title.style.color = this.styles.text;
@@ -145,6 +147,7 @@ class ChartElement {
         this.elements.select.style.borderLeftWidth = parseInt(this.styles.border) * 4 + "px";
         this.elements.select.style.borderRightWidth = parseInt(this.styles.border) * 4 + "px";
         this.elements.select.style.cursor = "grab";
+        this.elements.select.style.zIndex = "100";
 
         this.elements.draggerLeft.style.position = "absolute";
         this.elements.draggerLeft.style.left = "-18px";
@@ -164,8 +167,9 @@ class ChartElement {
     update() {
         this.elements.select.style.left = "0px";
         this.elements.select.style.width = "0px";
-        this.controller.update();
         this.drawer.update();
+        this.previewer.update();
+        this.controller.update();
     }
 
     render() {
@@ -216,7 +220,11 @@ class ChartElement {
         };
 
         this.controller.onselect = (x, value, visible) => {
-            this.drawer.select = value;
+            if (visible) {
+                this.drawer.select = value;
+            } else {
+                this.drawer.select = null;
+            }
         }
 
         this.controller.update();
@@ -373,7 +381,7 @@ class ChartController {
             eventArgs.clientX = eventArgs.touches[0].clientX;
         }
         eventArgs.preventDefault();
-        let percent = (eventArgs.clientX - this.field.offsetLeft) / this.field.clientWidth;
+        let percent = eventArgs.offsetX / this.field.clientWidth;
 
         this.onselect(eventArgs.clientX, percent, visible);
     }

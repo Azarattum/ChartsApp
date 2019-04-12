@@ -168,6 +168,10 @@ class GL {
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, offset, count - offset);
     }
 
+    drawCircle(count, offset = 0) {
+        this.gl.drawArrays(this.gl.TRIANGLE_FAN, offset, count - offset);
+    }
+
     drawElements(count, offset = 0) {
         this.gl.drawElements(this.gl.TRIANGLES, count - offset, this.gl.UNSIGNED_SHORT, offset * 2);
     }
