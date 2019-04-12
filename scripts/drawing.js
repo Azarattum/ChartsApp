@@ -173,12 +173,8 @@ class ChartDrawer {
         this.layout = !!layout;
         /**Layout drawer object.*/
         this.layoutDrawer = this.layout ? new LayoutDrawer(layout, this.gl) : null;
-        /**Circle drawer object.*/
-        this.circleDrawer = this.layout ? new CircleDrawer(this.gl, this.graphDrawers, this.backgroundColor) : null;
         /**Values of the selected points.*/
         this.selectedPoints = [];
-        /**Coordinates of the selection circles.*/
-        this.selectionCircles = [];
         /**Background color.*/
         this.backgroundColor = new Color();
         //#endregion
@@ -266,9 +262,6 @@ class ChartDrawer {
         if (backgroundColor) {
             this.backgroundColor = backgroundColor;
             this.gl.background = backgroundColor;
-            /*if (this.circleDrawer != null) {
-                this.circleDrawer.backgroundColor = backgroundColor;
-            }*/
         }
         if (this.layout && textColor) {
             this.layoutDrawer.color = textColor;
@@ -378,9 +371,6 @@ class ChartDrawer {
                 this.drawSelection(drawingData.selection);
             }
             this.drawGraphs(drawingData.top, drawingData.start, drawingData.end);
-            if (this.layout) {
-                this.drawCircles();
-            }
         }
         this.redraw = false;
     }
@@ -408,10 +398,6 @@ class ChartDrawer {
         if (x != null) {
             this.layoutDrawer.drawSelection(x, this.graphDrawers[0].projection.get());
         }
-    }
-
-    drawCircles() {
-        this.circleDrawer.draw(this.selectionCircles, this.graphDrawers[0].projection.get());
     }
 }
 
@@ -611,69 +597,6 @@ class LayoutDrawer {
 
                 this.context.fillText(label, x, y);
             }
-        }
-    }
-}
-
-class CircleDrawer {
-    constructor(gl, graphDrawers, backgroundColor) {
-        this.gl = gl;
-        this.graphDrawers = graphDrawers;
-        this.backgroundColor = backgroundColor;
-        this.circleProjection = [];//new AnimationObject([1, 0, 0, 0, 1, 0, 0, 0, 1]);
-        this.stack = this.gl.newStack();
-        this.redraw = true;
-
-        let points = [];
-        let directions = [];
-        for (let i = 0; i < Math.PI * 2; i += 0.1) {
-            points.push(
-                Math.cos(i),
-                Math.sin(i)
-            );
-            directions.push(0);
-        }
-
-        gl.attributes.position = points;
-        gl.attributes.direction = directions;
-    }
-
-    draw(points, graphProjection) {
-        this.gl.stack = this.stack;
-
-        for (const i in points) {
-            const point = points[i];
-            if (point == null) continue;
-
-            let projection = [
-                1 / 50, 0, 0,
-                0, this.gl.viewport.width / this.gl.viewport.height / 50, 0,
-                point.x / (graphProjection? graphProjection[0] : 1), point.y, 1
-            ];
-
-            if (!this.circleProjection[i]) {
-                this.circleProjection[i] = new AnimationObject(projection, ANIMATION_PERIOD);
-            } else {
-                this.circleProjection[i].set(projection, ANIMATION_PERIOD);
-                this.redraw = true;
-            }
-
-            if (this.circleProjection[i].get()) debugger;
-            console.log(this.gl.uniforms.projection);
-            this.gl.uniforms.projection = this.circleProjection[i].get();
-            this.gl.uniforms.color = this.graphDrawers[i].color.toArray();
-            this.gl.drawCircle(63);
-
-            /*projection[0] /= 1.1;
-            projection[5] /= 1.1;
-
-            this.gl.uniforms.projection = this.circleProjection[i].get();
-            this.gl.uniforms.color = this.backgroundColor.toArray();
-            this.gl.drawCircle(63);*/
-        }
-
-        if (!this.circleProjection.some(x => x.inProgress)) {
-            this.redraw = false;
         }
     }
 }
