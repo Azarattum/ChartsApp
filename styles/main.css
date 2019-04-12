@@ -9,6 +9,8 @@ body,
 
 .chart-container {
     position: relative;
+    margin-bottom: calc(var(--main-margin) * 4);
+    margin-top: var(--main-margin);
     width: 100%;
 }
 

@@ -20,7 +20,7 @@ class GraphDrawer {
         /**GL stack is.*/
         this.stack = gl.newStack();
         /**Path object of the graph.*/
-        this.path = new Path(graph.vertices);
+        this.path = new Path(graph.vertices, this.graph.type);
         /**Visibility state of the graph.*/
         this.visibilityState = true;
         /**Whethe the graph needs to redraw.*/
@@ -134,7 +134,13 @@ class GraphDrawer {
         if (end < this.graph.points.length) end++;
         if (start > 0) start--;
 
-        this.gl.drawElements((end - 1) * 6, start * 6);
+        if (this.graph.type == "line") {
+            this.gl.drawElements((end - 1) * 6, start * 6);
+        } else if (this.graph.type == "bar") {
+            this.gl.drawTriangles((end - 1) * 5, start * 5);
+        } else {
+            this.gl.drawShape((end - 1) * 6, start * 6);
+        }
 
         if (!this.baseColor.inProgress && !this.projection.inProgress &&
             !this.cuts.inProgress) {
@@ -366,11 +372,11 @@ class ChartDrawer {
         if ((this.layout && this.layoutDrawer.redraw) || this.redraw || this.graphDrawers.some(x => x.redraw)) {
             const drawingData = this.calculate();
             this.gl.clear();
+            this.drawGraphs(drawingData.top, drawingData.start, drawingData.end);
             if (this.layout) {
                 this.drawLayout();
                 this.drawSelection(drawingData.selection);
             }
-            this.drawGraphs(drawingData.top, drawingData.start, drawingData.end);
         }
         this.redraw = false;
     }

@@ -1,33 +1,49 @@
 console.debugging = true;
 const ANIMATION_PERIOD = 200;
-var chart;
+var charts = [];
 
 load({
-    "data/1/overview.json": "chart",
+    "data/1/overview.json": "chart1",
+    "data/2/overview.json": "chart2",
+    "data/3/overview.json": "chart3",
+    "data/4/overview.json": "chart4",
+    "data/5/overview.json": "chart5",
     "scripts/line.frag": "lineFragShader",
     "scripts/line.vert": "lineVertShader",
 }, (data) => {
     console.debug(data);
 
-    const container = document.getElementById("chart");
-    const shaders = {
-        line: [data["lineVertShader"], data["lineFragShader"]]
-    };
-    const pageStyle = getComputedStyle(document.getElementsByClassName("page")[0]);
+    const chartsContainer = document.getElementById("charts");
 
-    chart = new ChartElement(container, shaders);
-    chart.chart = data["chart"];
-    chart.style = {
-        background: pageStyle.getPropertyValue("--color-background"),
-        text: pageStyle.getPropertyValue("--color-text"),
-        font: pageStyle["font-family"],
-        lowlight: pageStyle.getPropertyValue("--lowlight")
-    };
+    for (let i = 1; i <= 5; i++) {
+        let container = document.createElement("div");
+        chartsContainer.appendChild(container);
+
+        let shaders = {
+            line: [data["lineVertShader"], data["lineFragShader"]],
+            bar: [data["lineVertShader"], data["lineFragShader"]],
+            area: [data["lineVertShader"], data["lineFragShader"]]
+        };
+        let pageStyle = getComputedStyle(document.getElementsByClassName("page")[0]);
+    
+        chartElement = new ChartElement(container, shaders);
+        chartElement.chart = data["chart" + i];
+        chartElement.style = {
+            background: pageStyle.getPropertyValue("--color-background"),
+            text: pageStyle.getPropertyValue("--color-text"),
+            font: pageStyle["font-family"],
+            lowlight: pageStyle.getPropertyValue("--lowlight")
+        };
+
+        charts.push(chartElement);
+    }
 
     requestAnimationFrame(draw);
 
     function draw() {
-        chart.render();
+        for (const chart of charts) {
+            chart.render();
+        }
         requestAnimationFrame(draw);
     }
 
@@ -45,8 +61,13 @@ load({
     };
 
     window.onresize = () => {
-        chart.update();
+        for (const chart of charts) {
+            chart.update();
+        }
     };
+
+    document.body.style.backgroundColor =
+        window.getComputedStyle(document.getElementsByClassName("page")[0])["background-color"];
 });
 
 /**

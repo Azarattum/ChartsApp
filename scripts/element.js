@@ -91,8 +91,6 @@ class ChartElement {
     initializeStyle() {
         this.elements.container.style.font = this.styles.font;
 
-        
-
         this.elements.title.style.display = "block";
         this.elements.title.style.fontWeight = "bold";
         this.elements.title.style.color = this.styles.text;
@@ -232,6 +230,7 @@ class ChartElement {
         this.elements.title.innerHTML = "Chart Title";
 
         //Add buttons
+        if (this.chartData.graphs.length <= 1) return;
         for (const graphId in this.chartData.graphs) {
             let button = document.createElement("label");
             let checkbox = document.createElement("input");

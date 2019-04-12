@@ -67,9 +67,12 @@ class Chart {
             this.graphs.push(graph);
         }
 
+        this.graphs = this.graphs.sort(function(a, b){return b.maxY-a.maxY});
+
         this.type = this.graphs[0].type;
 
         ///FOR SINGLE Y!
+        let lowerVertices = [];
         //Calculate graph vertices according to the biggest size
         this.graphs.forEach(x => x.calculateVertices(this.size, this.offsets));
         //#endregion
@@ -150,7 +153,7 @@ class Graph {
     }
 
     calculateVertices(maxSize, minSize) {
-        this.vertices.forEach((point) => {
+        this.vertices.forEach((point, index) => {
             point.x = (point.x - minSize.x) / maxSize.x * 2 - 1;
             point.y = (point.y - minSize.y) / maxSize.y * 2 - 1;
         });

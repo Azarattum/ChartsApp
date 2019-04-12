@@ -1,5 +1,5 @@
 class Path {
-    constructor(points) {
+    constructor(points, type = "line") {
         this.points = points;
         this.indices = new Uint16Array(points.length * 6);
         this.vertices = [];
@@ -8,9 +8,27 @@ class Path {
         this.directions = [];
 
         //Fill vertices
-        points.forEach(point => {
-            this.vertices.push(point.x, point.y, point.x, point.y);
-        });
+        if (type == "line") {
+            points.forEach(point => {
+                this.vertices.push(point.x, point.y, point.x, point.y);
+            });
+        } else if (type == "area") {
+            points.forEach(point => {
+                this.vertices.push(point.x, point.y, point.x, -1);
+            });
+        } else if (type == "bar") {
+            const amplitude = (points[1].x - points[0].x);
+            points.forEach(point => {
+                this.vertices.push(
+                    point.x, point.y,
+                    point.x, -1,
+                    point.x + amplitude, point.y,
+                    point.x, -1,
+                    point.x + amplitude, -1,
+                    point.x + amplitude, point.y,
+                );
+            });
+        }
 
         //Fill previouses
         points.forEach((point, i, array) => {
@@ -23,7 +41,7 @@ class Path {
 
         //Fill nexts
         points.forEach((point, i, array) => {
-            if (i < array.length-1) i++;
+            if (i < array.length - 1) i++;
 
             this.nexts.push(
                 array[i].x, array[i].y, array[i].x, array[i].y
@@ -31,9 +49,15 @@ class Path {
         });
 
         //Fill direction
-        points.forEach(point => {
-            this.directions.push(-1, 1);
-        });
+        if (type == "line") {
+            points.forEach(point => {
+                this.directions.push(-1, 1);
+            });
+        } else if (type == "area" || type == "bar") {
+            points.forEach(point => {
+                this.directions.push(0, 0, 0);
+            });
+        }
 
         //Fill indices
         let j = 0;
@@ -49,7 +73,7 @@ class Path {
             index += 2;
         });
     }
-    
+
     get length() {
         return (this.points.length - 1) * 6;
     }
