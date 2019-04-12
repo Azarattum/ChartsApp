@@ -1,86 +1,33 @@
 console.debugging = true;
 const ANIMATION_PERIOD = 200;
 var chart;
-var drawer;
 
 load({
-    "data/3/overview.json": "chart",
-    "scripts/line.frag": "lineShader",
-    "scripts/line.vert": "vertexShader",
+    "data/1/overview.json": "chart",
+    "scripts/line.frag": "lineFragShader",
+    "scripts/line.vert": "lineVertShader",
 }, (data) => {
     console.debug(data);
-    let vertexShader = new Shader(data["vertexShader"], Shader.types.VERTEX);
-    let fragmentShader = new Shader(data["lineShader"], Shader.types.FRAGMENT);
-    let program = new ShadersProgram(vertexShader, fragmentShader);
-    let canvas = document.getElementById("chart");
-    let layout = document.getElementById("layout");
-    
-    /*===================TESTS!===================*/
-    chart = new Chart(data["chart"]);
-    drawer = new ChartDrawer(chart, canvas, program, layout);
-    drawer.update(
-        new Color(
-            getComputedStyle(document.getElementsByClassName("page")[0])
-            .getPropertyValue("--color-background")
-        ),
-        new Color(
-            getComputedStyle(document.getElementsByClassName("page")[0])
-            .getPropertyValue("--color-text")
-        ),
-        getComputedStyle(document.getElementsByClassName("page")[0])["font-family"]
-    );
 
-    //Get elements
-    let selector = document.getElementById("select"),
-        leftDragger = document.getElementById("left-dragger"),
-        rightDragger = document.getElementById("right-dragger"),
-        coverLeft = document.getElementById("cover-left"),
-        coverRight = document.getElementById("cover-right");
-    //Create controller
-    let controller = new ChartController(selector, leftDragger, rightDragger, layout);
-    controller.onupdate = (start, end) => {
-        coverLeft.style.width = start * 100 + "%";
-        coverRight.style.width = (1 - end) * 100 + "%";
-        drawer.start = start;
-        drawer.end = end;
+    const container = document.getElementById("chart");
+    const shaders = {
+        line: [data["lineVertShader"], data["lineFragShader"]]
     };
-    controller.onselect = (x, value, visible) => {
-        drawer.select = value;
-        /*drawer.select = visible ? value : undefined;
-        let tooltip = document.getElementById("tooltip");
-        let left = (x - tooltip.clientWidth / 3) + "px";
-        if (parseInt(left) < 0) {
-            left = "0px";
-        }
-        if (parseInt(left) >=
-            (tooltip.parentNode.clientWidth - tooltip.clientWidth -
-                parseInt(window.getComputedStyle(document.getElementsByClassName("page")[0])
-                    .getPropertyValue("--main-margin")))) {
-            left = (tooltip.parentNode.clientWidth - tooltip.clientWidth -
-                parseInt(window.getComputedStyle(document.getElementsByClassName("page")[0])
-                    .getPropertyValue("--main-margin"))) + "px";
-        }
-        tooltip.style.left = left;
+    const pageStyle = getComputedStyle(document.getElementsByClassName("page")[0]);
 
-        tooltip.style.opacity = visible ? "1" : "0";
-
-        if (visible) {
-            let date = new Date(+drawer.selection.date).toString();
-            date = date.split(" ")[0] + ", " + date.split(" ")[1] + " " + date.split(" ")[2];
-            document.getElementById("date").innerHTML = date;
-            let values = document.getElementById("values").children;
-            for (let i = 0; i < values.length; i++) {
-                values[i].style.display = drawer.graphDrawers[i].visible ? "block" : "none";
-                values[i].children[0].innerHTML = drawer.selection.values[i];
-            }
-        }*/
-    };
-    controller.update();
+    chart = new ChartElement(container, shaders);
+    chart.chart = data["chart"];
+    chart.style = {
+        background: pageStyle.getPropertyValue("--color-background"),
+        text: pageStyle.getPropertyValue("--color-text"),
+        font: pageStyle["font-family"],
+        lowlight: pageStyle.getPropertyValue("--lowlight")
+    }
 
     requestAnimationFrame(draw);
 
     function draw() {
-        drawer.draw();
+        chart.render();
         requestAnimationFrame(draw);
     }
 });

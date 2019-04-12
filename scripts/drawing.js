@@ -13,7 +13,7 @@ class GraphDrawer {
             end: 1
         };
         /**Whether the graph is visible or not.*/
-        this.baseColor = this.graph.color;
+        this.baseColor = new AnimationObject(this.graph.color);
         /**Drawing GL object.*/
         this.gl = gl;
         /**GL stack is.*/
@@ -65,7 +65,7 @@ class GraphDrawer {
     }
 
     set color(value) {
-        this.baseColor = new AnimationObject(this.color, value, ANIMATION_PERIOD / 2);
+        this.baseColor.set(value, ANIMATION_PERIOD / 2);
         this.redraw = true;
     }
 
@@ -186,10 +186,10 @@ class ChartDrawer {
         };
         /**Whether the chart needs to redraw.*/
         this.redraw = true;
-        /**Layout drawer object.*/
-        this.layoutDrawer = new LayoutDrawer(layout, this.gl);
         /**Whether draw layout or not.*/
         this.layout = !!layout;
+        /**Layout drawer object.*/
+        this.layoutDrawer = this.layout ? new LayoutDrawer(layout, this.gl) : null;
         //#endregion
 
         //Perform initial update
@@ -264,19 +264,21 @@ class ChartDrawer {
     /**
      * Updates sizes and colors.
      */
-    update(backgroundColor, textColor, textFont) {
-        this.layoutCanvas.width = this.layoutCanvas.clientWidth * window.devicePixelRatio;
-        this.layoutCanvas.height = this.layoutCanvas.clientHeight * window.devicePixelRatio;
+    update(backgroundColor, textColor, textFont, thickness = 5) {
+        if (this.layout) {
+            this.layoutCanvas.width = this.layoutCanvas.clientWidth * window.devicePixelRatio;
+            this.layoutCanvas.height = this.layoutCanvas.clientHeight * window.devicePixelRatio;
+        }
         this.gl.resize();
         this.gl.uniforms.aspect = this.gl.viewport.width / this.gl.viewport.height;
-        this.gl.uniforms.thickness = 5 / this.canvas.height;
+        this.gl.uniforms.thickness = thickness / this.canvas.height;
         if (backgroundColor) {
             this.gl.background = backgroundColor;
         }
-        if (textColor) {
+        if (this.layout && textColor) {
             this.layoutDrawer.color = textColor;
         }
-        if (textFont) {
+        if (this.layout && textFont) {
             this.layoutDrawer.font = textFont;
         }
         this.redraw = true;
@@ -362,7 +364,7 @@ class ChartDrawer {
     draw() {
         const drawingData = this.calculate();
 
-        if (this.layoutDrawer.redraw || this.redraw || this.graphDrawers.some(x => x.redraw)) {
+        if ((this.layout && this.layoutDrawer.redraw) || this.redraw || this.graphDrawers.some(x => x.redraw)) {
             this.gl.clear();
             if (this.layout) {
                 this.drawLayout();

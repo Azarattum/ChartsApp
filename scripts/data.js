@@ -67,6 +67,8 @@ class Chart {
             this.graphs.push(graph);
         }
 
+        this.type = this.graphs[0].type;
+
         ///FOR SINGLE Y!
         //Calculate graph vertices according to the biggest size
         this.graphs.forEach(x => x.calculateVertices(this.size, this.offsets));
