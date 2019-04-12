@@ -22,7 +22,7 @@ load({
         text: pageStyle.getPropertyValue("--color-text"),
         font: pageStyle["font-family"],
         lowlight: pageStyle.getPropertyValue("--lowlight")
-    }
+    };
 
     requestAnimationFrame(draw);
 
@@ -30,6 +30,23 @@ load({
         chart.render();
         requestAnimationFrame(draw);
     }
+
+    document.getElementsByClassName("theme-switch")[0].onclick = () => {
+        setTimeout(() => {
+            document.body.style.backgroundColor =
+                window.getComputedStyle(document.getElementsByClassName("page")[0])["background-color"];
+            chart.style = {
+                background: pageStyle.getPropertyValue("--color-background"),
+                text: pageStyle.getPropertyValue("--color-text"),
+                font: pageStyle["font-family"],
+                lowlight: pageStyle.getPropertyValue("--lowlight")
+            };
+        }, 2);
+    };
+
+    window.onresize = () => {
+        chart.update();
+    };
 });
 
 /**

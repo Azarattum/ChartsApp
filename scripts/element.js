@@ -162,12 +162,13 @@ class ChartElement {
     }
 
     update() {
+        this.elements.select.style.left = "0px";
+        this.elements.select.style.width = "0px";
+        this.controller.update();
         this.drawer.update();
     }
 
     render() {
-        if (!this.visible) return;
-
         this.drawer.draw();
         this.previewer.draw();
     }
@@ -290,17 +291,6 @@ class ChartElement {
             new Color(styles.text),
             styles.font,
             2
-        );
-    }
-
-    get visible() {
-        const rect = this.elements.container.getBoundingClientRect();
-
-        return (
-            rect.top >= 0 &&
-            rect.left >= 0 &&
-            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
         );
     }
 }

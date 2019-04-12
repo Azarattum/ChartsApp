@@ -153,7 +153,7 @@ body,
 
 .chart-graph-button>input:checked~.chart-graph-button-name {
     left: 0;
-    color: rgb(var(--color-text)) !important;
+    color: white !important;
 }
 
 .chart-graph-button>input:not(:checked)~.chart-graph-button-icon {
