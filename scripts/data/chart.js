@@ -1,3 +1,6 @@
+/**
+ * This class represents a chart.
+ */
 class Chart {
     /**
      * Creates a chart object.
@@ -37,8 +40,8 @@ class Chart {
 
         //#region Create graphs
         const shift = typeof source.columns[0][0] == "string";
-        let xAxis = source.columns[0];
-        if (shift) xAxis.shift();
+        this.xAxis = source.columns[0];
+        if (shift) this.xAxis.shift();
 
         this.size = new Point(-Number.MAX_SAFE_INTEGER, -Number.MAX_SAFE_INTEGER);
         this.offsets = new Point(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
@@ -51,7 +54,7 @@ class Chart {
             const type = source.types[id];
 
             //Create a graph
-            const graph = new Graph(xAxis, yAxis, color, name, type);
+            const graph = new Graph(this.xAxis, yAxis, color, name, type);
             if (graph.size.x > this.size.x) {
                 this.size.x = graph.size.x;
             }
@@ -71,8 +74,6 @@ class Chart {
 
         this.type = this.graphs[0].type;
 
-        ///FOR SINGLE Y!
-        let lowerVertices = [];
         //Calculate graph vertices according to the biggest size
         this.graphs.forEach(x => x.calculateVertices(this.size, this.offsets));
         //#endregion
@@ -108,54 +109,5 @@ class Chart {
         }
         console.debug("Charts array parsed", charts);
         return charts;
-    }
-}
-
-class Graph {
-    /**
-     * Creates a graph object.
-     * @param {Object} source Source object to create a graph.
-     */
-    constructor(xAxis, yAxis, color, name, type) {
-        //#region Properties
-        /**Graph color.*/
-        this.color = color;
-        /**Graph name.*/
-        this.name = name;
-        /**Graph type.*/
-        this.type = type;
-        /**Top values.*/
-        this.maxX = -Number.MAX_SAFE_INTEGER;
-        this.minX = Number.MAX_SAFE_INTEGER;
-        this.maxY = -Number.MAX_SAFE_INTEGER;
-        this.minY = Number.MAX_SAFE_INTEGER;
-        /**Graph points.*/
-        this.points = [];
-        /**Graph normalized points.*/
-        this.vertices = [];
-        for (let i = 0; i < xAxis.length; i++) {
-            const x = xAxis[i];
-            const y = yAxis[i];
-
-            if (x > this.maxX) this.maxX = x;
-            if (x < this.minX) this.minX = x;
-            if (y > this.maxY) this.maxY = y;
-            if (y < this.minY) this.minY = y;
-
-            this.points.push(new Point(x, y));
-            this.vertices.push(new Point(x, y));
-        }
-        /**Graph size.*/
-        this.size = new Point(this.maxX - this.minX, this.maxY - this.minY);
-
-        //#endregion
-        console.debug("Graph created", this);
-    }
-
-    calculateVertices(maxSize, minSize) {
-        this.vertices.forEach((point, index) => {
-            point.x = (point.x - minSize.x) / maxSize.x * 2 - 1;
-            point.y = (point.y - minSize.y) / maxSize.y * 2 - 1;
-        });
     }
 }

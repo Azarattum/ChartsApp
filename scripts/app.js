@@ -8,23 +8,23 @@ load({
     "data/3/overview.json": "chart3",
     "data/4/overview.json": "chart4",
     "data/5/overview.json": "chart5",
-    "scripts/line.frag": "lineFragShader",
-    "scripts/line.vert": "lineVertShader",
+    "shaders/line.fsh": "lineFragShader",
+    "shaders/line.vsh": "lineVertShader",
 }, (data) => {
     console.debug(data);
 
+    const pageStyle = getComputedStyle(document.getElementsByClassName("page")[0]);
     const chartsContainer = document.getElementById("charts");
 
     for (let i = 1; i <= 5; i++) {
-        let container = document.createElement("div");
+        const container = document.createElement("div");
         chartsContainer.appendChild(container);
 
-        let shaders = {
+        const shaders = {
             line: [data["lineVertShader"], data["lineFragShader"]],
             bar: [data["lineVertShader"], data["lineFragShader"]],
             area: [data["lineVertShader"], data["lineFragShader"]]
         };
-        let pageStyle = getComputedStyle(document.getElementsByClassName("page")[0]);
     
         chartElement = new ChartElement(container, shaders);
         chartElement.chart = data["chart" + i];
@@ -49,14 +49,17 @@ load({
 
     document.getElementsByClassName("theme-switch")[0].onclick = () => {
         setTimeout(() => {
-            document.body.style.backgroundColor =
-                window.getComputedStyle(document.getElementsByClassName("page")[0])["background-color"];
-            chart.style = {
-                background: pageStyle.getPropertyValue("--color-background"),
-                text: pageStyle.getPropertyValue("--color-text"),
-                font: pageStyle["font-family"],
-                lowlight: pageStyle.getPropertyValue("--lowlight")
-            };
+            const pageStyle = getComputedStyle(document.getElementsByClassName("page")[0]);
+
+            document.body.style.backgroundColor = pageStyle["background-color"];
+            for (const chart of charts) {
+                chart.style = {
+                    background: pageStyle.getPropertyValue("--color-background"),
+                    text: pageStyle.getPropertyValue("--color-text"),
+                    font: pageStyle["font-family"],
+                    lowlight: pageStyle.getPropertyValue("--lowlight")
+                };
+            }
         }, 2);
     };
 
@@ -66,8 +69,7 @@ load({
         }
     };
 
-    document.body.style.backgroundColor =
-        window.getComputedStyle(document.getElementsByClassName("page")[0])["background-color"];
+    document.body.style.backgroundColor = pageStyle["background-color"];
 });
 
 /**

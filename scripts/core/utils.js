@@ -126,6 +126,30 @@ class Color {
         this.color.a = this.normalize(value);
     }
 
+    red(value) {
+        let color = new Color(this);
+        color.r = value;
+        return color;
+    }
+
+    green(value) {
+        let color = new Color(this);
+        color.g = value;
+        return color;
+    }
+
+    blue(value) {
+        let color = new Color(this);
+        color.b = value;
+        return color;
+    }
+
+    alpha(value) {
+        let color = new Color(this);
+        color.a = value;
+        return color;
+    }
+
     normalize(value) {
         if (+value > 255)
             return 255;
@@ -231,6 +255,7 @@ class AnimationObject {
         this.duration = duration;
         this.startProperty = startProperty;
         this.endProperty = endProperty;
+        this.modified = false;
     }
 
     /**
@@ -249,6 +274,7 @@ class AnimationObject {
         this.startTime = Date.now();
         this.duration = duration;
         this.endProperty = endProperty;
+        this.modified = true;
     }
 
     /**
