@@ -120,7 +120,7 @@ class GL {
         if (value >= 0 && value < this.programsBuffer.length)
             this.currentProgram = value;
 
-        this.programsBuffer[currentProgram].use();
+        this.programsBuffer[this.currentProgram].use();
     }
 
     /**

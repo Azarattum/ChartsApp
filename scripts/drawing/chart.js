@@ -6,7 +6,7 @@ class ChartDrawer {
      * Creates an object for drawing charts.
      * @param {Chart} chart The chart to draw.
      */
-    constructor(chart, canvas, program, layout = null) {
+    constructor(chart, canvas, shadersPack, layout = null) {
         //#region Fields
 
         //Core
@@ -16,7 +16,7 @@ class ChartDrawer {
         /**Layout canvas.*/
         this.canvas = layout;
         /**GL Object.*/
-        this.gl = new GL(canvas, program);
+        this.gl = new GL(canvas);
 
         //Custom properties
 
@@ -54,7 +54,7 @@ class ChartDrawer {
         this.graphDrawers = [];
         /**Layout drawer object.*/
         this.layoutDrawer = !this.layout ? null :
-            new LayoutDrawer(this, this.canvas, this.gl);
+            new LayoutDrawer(this, this.canvas, this.gl, shadersPack.line);
         //#endregion
 
         //Perform initial update
@@ -63,11 +63,11 @@ class ChartDrawer {
         //Initilizing graph drawers
         for (const graph of chart.graphs) {
             if (graph.type == "line") {
-                this.graphDrawers.push(new LineGraphDrawer(this, graph, this.gl));
+                this.graphDrawers.push(new LineGraphDrawer(this, graph, this.gl, shadersPack.line));
             } else if (graph.type == "bar") {
-                this.graphDrawers.push(new BarGraphDrawer(this, graph, this.gl));
+                this.graphDrawers.push(new BarGraphDrawer(this, graph, this.gl, shadersPack.bar));
             } else if (graph.type == "area") {
-                this.graphDrawers.push(new AreaGraphDrawer(this, graph, this.gl));
+                this.graphDrawers.push(new AreaGraphDrawer(this, graph, this.gl, shadersPack.area));
             }
         }
 

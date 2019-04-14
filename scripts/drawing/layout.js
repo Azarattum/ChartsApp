@@ -6,11 +6,13 @@ class LayoutDrawer {
      * Creates an object for drawing a layout.
      * @param {Element} canvas The canvas for drawing layout.
      */
-    constructor(chartDrawer, canvas, gl) {
+    constructor(chartDrawer, canvas, gl, shaders) {
         //#region Fields
 
         //Core
 
+        /**Shaders source*/
+        this.shaders = shaders;
         /**Chart drawer object.*/
         this.chartDrawer = chartDrawer;
         /**Layout canvas.*/
@@ -41,8 +43,9 @@ class LayoutDrawer {
 
         //#endregion
 
+        this._initializeProgram();
+
         this._initializeAttributes();
-        
 
         console.debug("LayoutDrawer created", this);
     }
@@ -55,6 +58,12 @@ class LayoutDrawer {
     //#endregion
 
     //#region Private methods
+    _initializeProgram() {
+        const vertex = new Shader(this.shaders[0], Shader.types.VERTEX);
+        const fragment = new Shader(this.shaders[1], Shader.types.FRAGMENT);
+        this.program = this.gl.newProgram(new ShadersProgram(vertex, fragment));
+    }
+
     _initializeAttributes() {
         this.stack = this.gl.newStack();
 

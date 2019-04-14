@@ -8,8 +8,12 @@ load({
     "data/3/overview.json": "chart3",
     "data/4/overview.json": "chart4",
     "data/5/overview.json": "chart5",
-    "shaders/line.fsh": "lineFragShader",
-    "shaders/line.vsh": "lineVertShader",
+    "shaders/line.fsh": "fshaderLine",
+    "shaders/line.vsh": "vshaderLine",
+    "shaders/bar.fsh": "fshaderBar",
+    "shaders/bar.vsh": "vshaderBar",
+    "shaders/area.fsh": "fshaderArea",
+    "shaders/area.vsh": "vshaderArea",
 }, (data) => {
     console.debug(data);
 
@@ -21,9 +25,9 @@ load({
         chartsContainer.appendChild(container);
 
         const shaders = {
-            line: [data["lineVertShader"], data["lineFragShader"]],
-            bar: [data["lineVertShader"], data["lineFragShader"]],
-            area: [data["lineVertShader"], data["lineFragShader"]]
+            line: [data["vshaderLine"], data["fshaderLine"]],
+            bar: [data["vshaderBar"], data["fshaderBar"]],
+            area: [data["vshaderArea"], data["fshaderArea"]]
         };
     
         chartElement = new ChartElement(container, shaders);

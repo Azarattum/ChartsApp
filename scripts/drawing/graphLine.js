@@ -2,8 +2,8 @@
  * Class for drawing line graphs.
  */
 class LineGraphDrawer extends GraphDrawer {
-    constructor(chart, graph, gl) {
-        super(chart, graph, gl);
+    constructor(chart, graph, gl, shaders) {
+        super(chart, graph, gl, shaders);
 
         this.thickness = 1;
     }

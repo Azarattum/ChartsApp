@@ -2,22 +2,18 @@
  * Class for drawing bar graphs.
  */
 class BarGraphDrawer extends GraphDrawer {
-    constructor(chart, graph, gl) {
-        super(chart, graph, gl);
-
-        this.thickness = 1;
+    constructor(chart, graph, gl, shaders) {
+        super(chart, graph, gl, shaders);
     }
 
     //#region Private methods
     _initializeAttributes() {
-        this.path = new PathLine(this.graph.vertices);
+        this.path = new PathBar(this.graph.vertices);
         this.stack = this.gl.newStack();
 
         this.gl.indices = this.path.indices;
         this.gl.attributes.position = this.path.vertices;
-        this.gl.attributes.next = this.path.nexts;
-        this.gl.attributes.previous = this.path.previouses;
-        this.gl.attributes.direction = this.path.directions;
+        this.gl.attributes.pointer = this.path.pointers;
     }
     //#endregion
 
@@ -28,8 +24,7 @@ class BarGraphDrawer extends GraphDrawer {
     draw() {
         super.draw();
 
-        this.gl.uniforms.aspect = this.gl.viewport.width / this.gl.viewport.height;
-        this.gl.uniforms.thickness = this.thickness / this.gl.canvas.height;
+        this.gl.uniforms.selected = -1;
 
         const count = (this.cuts.end - 1) * 6;
         const offset = this.cuts.start * 6;
