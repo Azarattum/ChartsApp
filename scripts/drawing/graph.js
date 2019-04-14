@@ -94,18 +94,23 @@ class GraphDrawer {
      * Draws the graph depending on current settings.
      */
     draw() {
+        const projection = this.chartDrawer.animations.projection.get();
         //Prepearing gl for render
         this.gl.program = this.program;
         this.gl.stack = this.stack;
-        this.gl.uniforms.projection = this.chartDrawer.animations.projection.get();
+        this.gl.uniforms.projection = projection;
         this.gl.uniforms.color = this.color.toArray();
 
-        this.cuts.start = Math.floor(this.chartDrawer.animations.cuts.get()[0]);
-        this.cuts.end = Math.ceil(this.chartDrawer.animations.cuts.get()[1]);
+        //Calculate cuts from projection
+        const start = (projection[0] - projection[6] - 1) / (2 * projection[0]);
+        const end = (projection[0] - projection[6] + 1) / (2 * projection[0]);
+        this.cuts.start = Math.round(start * this.graph.length);
+        this.cuts.end = Math.round(end * this.graph.length);
         //Left additional points off the screen to avoid artifacts
-        if (this.cuts.end < this.graph.length) this.cuts.end++;
-        if (this.cuts.end < this.graph.length) this.cuts.end++;
-        if (this.cuts.start > 0) this.cuts.start--;
+        for (let i = 0; i < 2; i++) {
+            if (this.cuts.end < this.graph.length) this.cuts.end++;       
+            if (this.cuts.start > 0) this.cuts.start--;       
+        }
     }
     //#endregion
 }

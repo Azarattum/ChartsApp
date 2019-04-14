@@ -44,8 +44,6 @@ class ChartDrawer {
         this.animations = {
             /**Describes graph transformations.*/
             projection: new AnimationObject([1, 0, 0, 0, 1, 0, 0, 0, 1]),
-            /**Cutted from drawing vertices indices.*/
-            cuts: new AnimationObject([0, chart.xAxis.length])
         };
 
         //Sub drawers
@@ -203,10 +201,6 @@ class ChartDrawer {
         this.animations.projection.set(
             projection,
             this.animations.projection.modified ? ANIMATION_PERIOD / 2 : 0
-        );
-        this.animations.cuts.set(
-            [start, index],
-            this.animations.cuts.modified ? ANIMATION_PERIOD / 2 : 0
         );
     }
     //#endregion
