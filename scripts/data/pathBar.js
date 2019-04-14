@@ -2,10 +2,12 @@
  * This class exteds Path class to path bars.
  */
 class PathBar extends Path {
-    constructor(points) {
+    constructor(points, graphs) {
         super(points);
         //#region Properties
         this.pointers = [];
+        this.uppers = [];
+        this.bases = [];
         //#endregion
 
         //Fill up the verteces
@@ -36,6 +38,33 @@ class PathBar extends Path {
         //Fill up the pointers
         points.forEach((point, index) => {
             this.pointers.push(index, index, index, index);
+        });
+
+        //Fill up the bases
+        points.forEach((point, index) => {
+            this.bases.push(1, 0, 0, 1);
+        });
+
+        //Fill up upper points
+        const thisIndex = graphs.indexOf(graphs.find(x => x.vertices == points));
+        points.forEach((point, index) => {
+            for (const graph in graphs) {
+                if (!this.uppers[graph]) {
+                    this.uppers[graph] = [];
+                }
+
+                if (graph < thisIndex) {
+                    this.uppers[graph].push(graphs[graph].vertices[index].y + 1);
+                    this.uppers[graph].push(graphs[graph].vertices[index].y + 1);
+                    this.uppers[graph].push(graphs[graph].vertices[index].y + 1);
+                    this.uppers[graph].push(graphs[graph].vertices[index].y + 1);
+                } else {
+                    this.uppers[graph].push(0);
+                    this.uppers[graph].push(0);
+                    this.uppers[graph].push(0);
+                    this.uppers[graph].push(0);
+                }
+            }
         });
     }
 }

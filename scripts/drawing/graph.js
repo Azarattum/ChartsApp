@@ -93,8 +93,7 @@ class GraphDrawer {
     /**
      * Draws the graph depending on current settings.
      */
-    draw() {
-        const projection = this.chartDrawer.animations.projection.get();
+    draw(projection) {
         //Prepearing gl for render
         this.gl.program = this.program;
         this.gl.stack = this.stack;

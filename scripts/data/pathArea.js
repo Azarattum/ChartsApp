@@ -6,6 +6,8 @@ class PathArea extends Path {
         super(points);
         //#region Properties
         this.sums = [];
+        this.uppers = [];
+        this.bases = [];
         //#endregion
 
         //Fill up the verteces
@@ -16,9 +18,41 @@ class PathArea extends Path {
         //Fill up the sums
         points.forEach((point, index) => {
             const sum = graphs.reduce((a, b) => {
-                return a + b.vertices[index].y;
+                if (b.vertices[index].y > a) {
+                    return b.vertices[index].y;
+                }
+                else {
+                    return a;
+                }
             }, 0);
             this.sums.push(sum, 0);
+        });
+
+        //Fill up the bases
+        points.forEach((point, index) => {
+            this.bases.push(1, 0, 0, 1);
+        });
+
+        //Fill up upper points
+        const thisIndex = graphs.indexOf(graphs.find(x => x.vertices == points));
+        points.forEach((point, index) => {
+            for (const graph in graphs) {
+                if (!this.uppers[graph]) {
+                    this.uppers[graph] = [];
+                }
+
+                if (graph < thisIndex) {
+                    this.uppers[graph].push(graphs[graph].vertices[index].y + 1);
+                    this.uppers[graph].push(graphs[graph].vertices[index].y + 1);
+                    this.uppers[graph].push(graphs[graph].vertices[index].y + 1);
+                    this.uppers[graph].push(graphs[graph].vertices[index].y + 1);
+                } else {
+                    this.uppers[graph].push(0);
+                    this.uppers[graph].push(0);
+                    this.uppers[graph].push(0);
+                    this.uppers[graph].push(0);
+                }
+            }
         });
     }
 }

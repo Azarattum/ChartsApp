@@ -39,6 +39,7 @@ class Chart {
         //#endregion
 
         //#region Create graphs
+        this.stacked = !!source.stacked;
         const shift = typeof source.columns[0][0] == "string";
         this.xAxis = source.columns[0];
         if (shift) this.xAxis.shift();
@@ -53,7 +54,6 @@ class Chart {
             const name = source.names[id];
             const type = source.types[id];
 
-            //Create a graph
             const graph = new Graph(this.xAxis, yAxis, color, name, type);
             if (graph.size.x > this.size.x) {
                 this.size.x = graph.size.x;

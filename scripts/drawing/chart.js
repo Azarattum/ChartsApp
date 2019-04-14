@@ -142,7 +142,6 @@ class ChartDrawer {
         let selectionIndex = -1;
         let minSelectionDistance = Number.MAX_SAFE_INTEGER;
         let maxY = -Number.MAX_SAFE_INTEGER;
-        let minY = Number.MAX_SAFE_INTEGER;
         //Go forward and scan
         goal = this.area.end * 2 - 1;
         while (true) {
@@ -160,15 +159,19 @@ class ChartDrawer {
                 }
             }
 
-            //Calculate local maximum ans minimum
+            //Calculate local maximum
+            let sum = 0;
             for (const drawer of this.graphDrawers) {
                 if (!drawer.visible) continue;
                 const graphVertex = drawer.graph.vertices[index];
+                sum += graphVertex.y + 1;
                 if (graphVertex.y > maxY) {
                     maxY = graphVertex.y;
-                } else if (graphVertex.y < minY) {
-                    minY = graphVertex.y;
                 }
+            }
+            //For stacked charts
+            if (this.chart.stacked && (sum - 1) > maxY) {
+                maxY = sum - 1;
             }
 
             index++;
@@ -260,8 +263,9 @@ class ChartDrawer {
             this._calculate();
             this.gl.clear();
 
+            const projection = this.animations.projection.get();
             for (const drawer of this.graphDrawers) {
-                drawer.draw();
+                drawer.draw(projection);
             }
 
             if (this.layout) {

@@ -22,7 +22,7 @@ load({
     const pageStyle = getComputedStyle(document.getElementsByClassName("page")[0]);
     const chartsContainer = document.getElementById("charts");
 
-    for (let i = 5; i <= 5; i++) {
+    for (let i = 1; i <= 5; i++) {
         const container = document.createElement("div");
         chartsContainer.appendChild(container);
 

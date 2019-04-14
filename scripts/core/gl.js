@@ -364,6 +364,49 @@ class Shader {
         this._changed = false;
     }
 
+    set variables(variables) {
+        //Process "repeat" statement
+        let offset = 0;
+        do {
+            const repeat = /^\s*\/\*\/\s*repeat\s+([0-9a-zA-Z]+)\s*\/\*\/\r?\n([^\n]*)/m;
+            const result = this.code.substr(offset).match(repeat);
+            if (!result) break;
+            const length = result[0].length;
+            const count = +parse(result[1], false);
+            const statement = result[2];
+
+            if (!Number.isInteger(count)) {
+                throw new Error("Compilation failed! Iterator must be an integer!")
+            }
+
+            let compiled = [];
+            for (let i = 0; i < count; i++) {
+                variables.i = i;
+                compiled.push(parse(statement, true));
+            }
+            delete variables.i;
+
+            this.code = this.code.slice(0, result.index + offset + 1) +
+                compiled.join("\n") + this.code.slice(result.index + offset + length);
+            offset = result.index + 1;
+        }
+        while (true)
+        //Process left variables
+        this.code = parse(this.code, true);
+
+        function parse(string, wrapped) {
+            for (const variable in variables) {
+                let exp = variable;
+                if (wrapped) {
+                    exp = "\\/\\*\\/\\s*" + exp + "\\s*\\/\\*\\/";
+                }
+
+                string = string.replace(new RegExp(exp, "g"), variables[variable]);
+            }
+            return string;
+        }
+    }
+
     attach(gl, program) {
         this.gl = gl;
         this.program = program;
@@ -409,7 +452,9 @@ class ShadersProgram {
         this.gl = null;
         this.program = null;
         this.uniformBuffer = [];
-        this.attributeBuffer = [[]];
+        this.attributeBuffer = [
+            []
+        ];
         this.indexBuffer = [];
         this.currentStack = 0;
     }

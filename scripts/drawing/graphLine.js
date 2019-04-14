@@ -25,8 +25,8 @@ class LineGraphDrawer extends GraphDrawer {
     /**
      * Draws the graph depending on current settings.
      */
-    draw() {
-        super.draw();
+    draw(projection) {
+        super.draw(projection);
 
         this.gl.uniforms.aspect = this.gl.viewport.width / this.gl.viewport.height;
         this.gl.uniforms.thickness = this.thickness / this.gl.canvas.height;

@@ -14,14 +14,24 @@ class AreaGraphDrawer extends GraphDrawer {
         this.gl.attributes.position = this.path.vertices;
         this.gl.attributes.sum = this.path.sums;
     }
+
+    _initializeProgram() {
+        const vertex = new Shader(this.shaders[0], Shader.types.VERTEX);
+        const fragment = new Shader(this.shaders[1], Shader.types.FRAGMENT);
+        vertex.variables = {
+            uppers: this.chartDrawer.chart.graphs.length,
+            current: this.chartDrawer.graphDrawers.length
+        };
+        return this.gl.newProgram(new ShadersProgram(vertex, fragment));
+    }
     //#endregion
 
     //#region Public methods
     /**
      * Draws the graph depending on current settings.
      */
-    draw() {
-        super.draw();
+    draw(projection) {
+        super.draw(projection);
 
         const count = this.cuts.end * 2;
         const offset = this.cuts.start * 2;
