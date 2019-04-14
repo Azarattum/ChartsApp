@@ -34,7 +34,7 @@ body,
     height: max-content;
 
     padding: calc(var(--main-margin) / 2);
-    
+
     font-size: 0.8em;
     border-radius: calc(var(--main-margin) / 2);
     box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.4);
@@ -121,6 +121,11 @@ body,
     cursor: pointer;
     transition: 0.2s;
     transition-property: background-color;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
     user-select: none;
 }
 
