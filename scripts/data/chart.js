@@ -41,6 +41,7 @@ class Chart {
         //#region Create graphs
         this.stacked = !!source.stacked;
         this.percentage = !!source.percentage;
+        this.scaled = !!source.y_scaled;
         const shift = typeof source.columns[0][0] == "string";
         this.xAxis = source.columns[0];
         if (shift) this.xAxis.shift();
@@ -72,6 +73,7 @@ class Chart {
         }
         if (this.percentage) {
             this.size.y = 100;
+            this.offsets.y = 0;
         }
 
         this.graphs = this.graphs.sort(function(a, b){return b.maxY-a.maxY});
@@ -79,7 +81,11 @@ class Chart {
         this.type = this.graphs[0].type;
 
         //Calculate graph vertices according to the biggest size
-        this.graphs.forEach(x => x.calculateVertices(this.size, this.offsets));
+        if (!this.scaled) {
+            this.graphs.forEach(x => x.calculateVertices(this.size, this.offsets));
+        } else {
+            this.graphs.forEach(x => x.calculateVertices(x.size, new Point(x.minX, x.minY)));
+        }
         //#endregion
 
         console.debug("Chart created", this);

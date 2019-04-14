@@ -17,7 +17,7 @@ class LayoutDrawer {
         this.chartDrawer = chartDrawer;
         /**Layout canvas.*/
         this.canvas = canvas;
-         /**Layout canvas context.*/
+        /**Layout canvas context.*/
         this.context = canvas.getContext("2d");
         /**GL Object.*/
         this.gl = gl;
@@ -80,7 +80,7 @@ class LayoutDrawer {
     /**
      * Draws layout lines.
      */
-    _drawLines(move, graphValue) {
+    _drawLines(move, graphValue, graphMin, graphValue2, graphMin2) {
         let projection = [
             1, 0, 0,
             0, 1, 0,
@@ -103,7 +103,7 @@ class LayoutDrawer {
             this.animations.lineFade.set(this.opacity / 3, ANIMATION_PERIOD * 2);
         }
         //Additionally animating offset depeding of lines fade
-        projection[7] -= 
+        projection[7] -=
             (this.animations.lineFade.get() / this.opacity / 3) / this.lineCount;
 
         //Draw the first pack of lines
@@ -114,9 +114,12 @@ class LayoutDrawer {
 
         //Draw the first pack of values
         this._drawValues(
-            projection[7], 
+            projection[7],
             color.alpha(this.animations.lineFade.get()),
-            graphValue
+            graphValue,
+            graphMin,
+            graphValue2,
+            graphMin2
         );
 
         //Draw the second pack of lines (with offset and inverted alpha)
@@ -130,14 +133,17 @@ class LayoutDrawer {
         this._drawValues(
             projection[7],
             this.color.alpha(this.opacity / 3 - this.animations.lineFade.get()),
-            graphValue
+            graphValue,
+            graphMin,
+            graphValue2,
+            graphMin2
         );
     }
 
     /**
      * Draws y axis values.
      */
-    _drawValues(y, color, graphValue) {
+    _drawValues(y, color, graphValue, graphMin, graphValue2, graphMin2) {
         const lineSpace = this.gl.canvas.height / this.lineCount;
         let textColor = new Color(color);
         textColor.a *= 2;
@@ -149,23 +155,40 @@ class LayoutDrawer {
             const textY = -y + i * lineSpace;
             if (textY > this.gl.canvas.height) continue;
             if (textY - lineSpace / 4 < 0) continue;
-            let label = (this.gl.canvas.height - textY) / this.gl.canvas.height * graphValue;
-            //Format value
-            const absolute = Math.abs(label);
-            if (absolute > 1000000000) {
-                label = parseFloat((label / 1000000000).toFixed(2)) + "B";
-            }
-            else if (absolute > 1000000) {
-                label = parseFloat((label / 1000000).toFixed(2)) + "M";
-            }
-            else if (absolute > 1000) {
-                label = parseFloat((label / 1000).toFixed(1)) + "K";
-            }
-            else {
-                label = Math.round(label);
-            }
 
+            let label = (this.gl.canvas.height - textY) / this.gl.canvas.height * graphValue;// + graphMin;
+            label = format(label);
+            if (graphValue2) {
+                let color = new Color(this.chartDrawer.graphDrawers[0].color);
+                color.a *= textColor.a / (this.opacity / 3 * 2);
+                this.context.fillStyle = color.toString();
+            }
+            this.context.textAlign = "left"; 
             this.context.fillText(label, 0, textY);
+
+            if (graphValue2) {
+                label = (this.gl.canvas.height - textY) / this.gl.canvas.height * graphValue2 + graphMin2;
+                label = format(label);
+                let color = new Color(this.chartDrawer.graphDrawers[1].color);
+                color.a *= textColor.a / (this.opacity / 3 * 2);
+                this.context.fillStyle = color.toString();
+                this.context.textAlign = "right"; 
+                this.context.fillText(label, this.gl.canvas.width, textY);
+            }
+        }
+
+        function format(number) {
+            //Format value
+            const absolute = Math.abs(number);
+            if (absolute > 1000000000) {
+                return parseFloat((number / 1000000000).toFixed(2)) + "B";
+            } else if (absolute > 1000000) {
+                return parseFloat((number / 1000000).toFixed(2)) + "M";
+            } else if (absolute > 1000) {
+                return parseFloat((number / 1000).toFixed(1)) + "K";
+            } else {
+                return Math.round(number);
+            }
         }
     }
 
@@ -184,9 +207,9 @@ class LayoutDrawer {
         this.context.fillStyle = this.color.toString();
 
         //Cycle trough all dates to draw
-        for (let j = 1; j < scale || 
+        for (let j = 1; j < scale ||
             (this.animations.dateFade[j] && this.animations.dateFade[j].get()); j *= 2) {
-            
+
             //Setting dates fade animation
             if (this.animations.dateFade[j] == undefined) {
                 this.animations.dateFade[j] = new AnimationObject(this.opacity);
@@ -198,7 +221,7 @@ class LayoutDrawer {
             }
 
             //Set color before drawing
-            this.context.fillStyle = 
+            this.context.fillStyle =
                 this.color.alpha(this.animations.dateFade[j].get()).toString();
 
             //Cycle trough dates of the whole axis
@@ -230,11 +253,19 @@ class LayoutDrawer {
         const move = projection[7];
         const scaleY = projection[4];
         const scaleX = projection[0];
-        const graphValue = this.chartDrawer.chart.size.y / scaleY;
+        if (!this.chartDrawer.chart.scaled) {
+            var graphValue = this.chartDrawer.chart.size.y / scaleY;
+            var graphMin = this.chartDrawer.chart.offsets.y;
+        } else {
+            var graphValue = this.chartDrawer.graphDrawers[0].graph.size.y / scaleY;
+            var graphValue2 = this.chartDrawer.graphDrawers[1].graph.size.y / scaleY;
+            var graphMin = this.chartDrawer.graphDrawers[0].graph.minY;
+            var graphMin2 = this.chartDrawer.graphDrawers[1].graph.minY;
+        }
 
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        this._drawLines(move, graphValue);
+        this._drawLines(move, graphValue, graphMin, graphValue2, graphMin2);
         this._drawDates(scaleX, this.chartDrawer.chart, this.chartDrawer.area);
     }
     //#endregion
