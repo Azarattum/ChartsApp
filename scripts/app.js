@@ -14,6 +14,8 @@ load({
     "shaders/bar.vsh": "vshaderBar",
     "shaders/area.fsh": "fshaderArea",
     "shaders/area.vsh": "vshaderArea",
+    "shaders/layout.fsh": "fshaderLayout",
+    "shaders/layout.vsh": "vshaderLayout",
 }, (data) => {
     console.debug(data);
 
@@ -27,7 +29,8 @@ load({
         const shaders = {
             line: [data["vshaderLine"], data["fshaderLine"]],
             bar: [data["vshaderBar"], data["fshaderBar"]],
-            area: [data["vshaderArea"], data["fshaderArea"]]
+            area: [data["vshaderArea"], data["fshaderArea"]],
+            layout: [data["vshaderLayout"], data["fshaderLayout"]],
         };
     
         chartElement = new ChartElement(container, shaders);

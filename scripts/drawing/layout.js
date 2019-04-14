@@ -43,7 +43,7 @@ class LayoutDrawer {
 
         //#endregion
 
-        this._initializeProgram();
+        this.program = this._initializeProgram();
 
         this._initializeAttributes();
 
@@ -61,24 +61,19 @@ class LayoutDrawer {
     _initializeProgram() {
         const vertex = new Shader(this.shaders[0], Shader.types.VERTEX);
         const fragment = new Shader(this.shaders[1], Shader.types.FRAGMENT);
-        this.program = this.gl.newProgram(new ShadersProgram(vertex, fragment));
+        return this.gl.newProgram(new ShadersProgram(vertex, fragment));
     }
 
     _initializeAttributes() {
         this.stack = this.gl.newStack();
 
         let lines = [];
-        ///IMPLEMENT A SEPARATE SHADER FOR THE LAYOUT TO AVOID THE CODE BELLOW!!!
-        let directions = [];
         for (let i = 0; i < this.lineCount + 1; i++) {
             lines.push(-1.1 * Math.pow(-1, i), 2 / this.lineCount * i - 1);
             lines.push(1.1 * Math.pow(-1, i), 2 / this.lineCount * i - 1);
-            directions.push(0);
-            directions.push(0);
         }
 
         this.gl.attributes.position = lines;
-        this.gl.attributes.direction = directions;
     }
 
     ///MOVE TO Y AXIS!!!

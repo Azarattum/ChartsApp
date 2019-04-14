@@ -52,7 +52,7 @@ class ChartDrawer {
         this.graphDrawers = [];
         /**Layout drawer object.*/
         this.layoutDrawer = !this.layout ? null :
-            new LayoutDrawer(this, this.canvas, this.gl, shadersPack.line);
+            new LayoutDrawer(this, this.canvas, this.gl, shadersPack.layout);
         //#endregion
 
         //Perform initial update
