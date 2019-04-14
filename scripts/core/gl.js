@@ -4,9 +4,10 @@ class GL {
      * @param {Element} canvas Canvas element.
      * @param {ShadersProgram} program Vertex & Fragment shaders program.
      */
-    constructor(canvas, program) {
+    constructor(canvas, program = null) {
         //GL Initializing
         this.currentStack = 0;
+        this.currentProgram = 0;
         this.canvas = canvas;
         this.gl = canvas.getContext("webgl", {
             alpha: false,
@@ -26,7 +27,7 @@ class GL {
         this.attributes = new Proxy(this.attributeBuffer, {
             set: (obj, name, value) => {
                 let attribute = this.attributeBuffer[this.currentStack].find(x => x.name == name);
-                let type = this.program.attributes[name];
+                let type = this.programsBuffer[this.currentProgram].attributes[name];
                 if (type == undefined) {
                     console.warn(new Error("Attribute " + name + " does not exist in shader program!"));
                     return;
@@ -34,7 +35,9 @@ class GL {
                 if (attribute != undefined) {
                     attribute.update(value);
                 } else {
-                    this.attributeBuffer[this.currentStack].push(new Attrubute(this.gl, program.program, type, name, value));
+                    this.attributeBuffer[this.currentStack].push(
+                        new Attrubute(this.gl, this.programsBuffer[this.currentProgram].program, type, name, value)
+                    );
                 }
                 return true;
             },
@@ -49,7 +52,7 @@ class GL {
         this.uniforms = new Proxy(this.uniformBuffer, {
             set: (obj, name, value) => {
                 let uniform = this.uniformBuffer.find(x => x.name == name);
-                let type = this.program.uniforms[name];
+                let type = this.programsBuffer[this.currentProgram].uniforms[name];
                 if (type == undefined) {
                     console.warn(new Error("Uniform " + name + " does not exist in shader program!"));
                     return;
@@ -57,7 +60,9 @@ class GL {
                 if (uniform != undefined) {
                     uniform.update(value);
                 } else {
-                    this.uniformBuffer.push(new Uniform(this.gl, program.program, type, name, value));
+                    this.uniformBuffer.push(
+                        new Uniform(this.gl, this.programsBuffer[this.currentProgram].program, type, name, value)
+                    );
                 }
                 return true;
             },
@@ -69,10 +74,10 @@ class GL {
         });
 
         this.indexBuffer = [];
-
-        this.program = program;
-        this.program.attach(this.gl);
-        this.program.use();
+        this.programsBuffer = [];
+        if (program != null) {
+            this.newProgram(program);
+        }
 
         this.gl.clearColor(0., 0., 0., 0.);
         this.gl.enable(this.gl.BLEND);
@@ -84,11 +89,12 @@ class GL {
         this.resize();
     }
 
+    //#region Properties
     /**
      * Sets current stack.
      */
     set stack(value) {
-        if (value < this.attributeBuffer.length)
+        if (value >= 0 && value < this.attributeBuffer.length)
             this.currentStack = value;
 
         for (const attribute of this.attributeBuffer[this.currentStack]) {
@@ -101,22 +107,27 @@ class GL {
     }
 
     /**
-     * Returns count of stacks.
+     * Returns current stack id.
      */
     get stack() {
-        return this.attributeBuffer.length;
+        return this.currentStack;
     }
 
     /**
-     * Creates a new stack.
+     * Sets current program as current.
      */
-    newStack() {
-        if (this.attributeBuffer[this.currentStack].length == 0) {
-            return this.currentStack;
-        }
-        this.attributeBuffer.push([]);
-        this.currentStack = this.attributeBuffer.length - 1;
-        return this.currentStack;
+    set program(value) {
+        if (value >= 0 && value < this.programsBuffer.length)
+            this.currentProgram = value;
+
+        this.programsBuffer[currentProgram].use();
+    }
+
+    /**
+     * Returns current program id.
+     */
+    get program() {
+        return this.currentProgram;
     }
 
     set background(color) {
@@ -137,6 +148,30 @@ class GL {
 
         this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, indices, this.gl.STATIC_DRAW);
     }
+    //#endregion
+
+    //#region Public methods
+    /**
+     * Creates a new shders program.
+     */
+    newProgram(program) {
+        program.attach(this.gl);
+        this.programsBuffer.push(program);
+        this.currentProgram = this.programsBuffer.length - 1;
+        return this.currentProgram;
+    }
+
+    /**
+     * Creates a new stack.
+     */
+    newStack() {
+        if (this.attributeBuffer[this.currentStack].length == 0) {
+            return this.currentStack;
+        }
+        this.attributeBuffer.push([]);
+        this.currentStack = this.attributeBuffer.length - 1;
+        return this.currentStack;
+    }
 
     resize(width = this.canvas.clientWidth, height = this.canvas.clientHeight) {
         this.viewport = {
@@ -152,6 +187,7 @@ class GL {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
     }
 
+    //#region Drawing functions
     drawStrip(count, offset = 0) {
         this.gl.drawArrays(this.gl.LINE_STRIP, offset, count - offset);
     }
@@ -175,6 +211,8 @@ class GL {
     drawElements(count, offset = 0) {
         this.gl.drawElements(this.gl.TRIANGLES, count - offset, this.gl.UNSIGNED_SHORT, offset * 2);
     }
+    //#endregion
+    //#endregion
 }
 
 class Attrubute {
