@@ -205,7 +205,7 @@ body,
 /*========THEME STYLES========*/
 
 .theme>input {
-    position: absolute;
+    position: fixed;
     height: 0;
     width: 0;
 

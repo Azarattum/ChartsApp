@@ -32,7 +32,7 @@ load({
             area: [data["vshaderArea"], data["fshaderArea"]],
             layout: [data["vshaderLayout"], data["fshaderLayout"]],
         };
-    
+
         chartElement = new ChartElement(container, shaders);
         chartElement.chart = data["chart" + i];
         chartElement.style = {

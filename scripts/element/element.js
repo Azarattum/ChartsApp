@@ -83,7 +83,7 @@ class ChartElement {
 
             checkbox.type = "checkbox";
             checkbox.checked = true;
-            checkbox.style.position = "absolute";
+            checkbox.style.position = "fixed";
             checkbox.style.opacity = "0";
             
             button.appendChild(checkbox);
