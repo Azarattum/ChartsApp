@@ -160,33 +160,26 @@ class ChartDrawer {
             }
 
             //Calculate local maximum
-            let sum = 0;
-            for (const drawer of this.graphDrawers) {
-                if (!drawer.visible) continue;
-                const graphVertex = drawer.graph.vertices[index];
-                sum += graphVertex.y + 1;
-                if (graphVertex.y > maxY) {
-                    maxY = graphVertex.y;
+            if (!this.chart.percentage) {
+                let sum = 0;
+                for (const drawer of this.graphDrawers) {
+                    if (!drawer.visible) continue;
+                    const graphVertex = drawer.graph.vertices[index];
+                    sum += graphVertex.y + 1;
+                    if (graphVertex.y > maxY) {
+                        maxY = graphVertex.y;
+                    }
                 }
-            }
-            //For stacked charts
-            if (this.chart.stacked && (sum - 1) > maxY) {
-                maxY = sum - 1;
+                //For stacked charts
+                if (this.chart.stacked && (sum - 1) > maxY) {
+                    maxY = sum - 1;
+                }
+            } else {
+                maxY = 1;
             }
 
             index++;
         }
-
-        //Calculating the projection
-        const zoomX = 1 / (this.area.end - this.area.start);
-        const zoomY = 2 / (this.area.top + 1);
-        const moveX = (1 - this.area.start - this.area.end) * zoomX;
-        const moveY = zoomY - 1;
-        const projection = [
-            zoomX, 0, 0,
-            0, zoomY, 0,
-            moveX, moveY, 1
-        ];
 
         //Saving calculated data
         this.area.top = maxY;
@@ -199,6 +192,17 @@ class ChartDrawer {
                 this.selection.points.push(drawer.graph.points[selectionIndex]);
             }
         }
+
+        //Calculating the projection
+        const zoomX = 1 / (this.area.end - this.area.start);
+        const zoomY = 2 / (this.area.top + 1);
+        const moveX = (1 - this.area.start - this.area.end) * zoomX;
+        const moveY = zoomY - 1;
+        const projection = [
+            zoomX, 0, 0,
+            0, zoomY, 0,
+            moveX, moveY, 1
+        ];
 
         //Setting up the animations
         this.animations.projection.set(
@@ -226,7 +230,6 @@ class ChartDrawer {
      * Updates sizes and colors.
      */
     update(backgroundColor, textColor, textFont, thickness) {
-
         this.gl.resize();
 
         if (backgroundColor) {
@@ -269,7 +272,7 @@ class ChartDrawer {
             }
 
             if (this.layout) {
-                this.layoutDrawer.draw();
+                this.layoutDrawer.draw(projection);
                 ///IMPLEMENT NEW SELECTION CLASS!
                 /*if (this.selection.value != null) {
                     this.layoutDrawer.drawSelection(this.selection.value, this.graphDrawers[0].projection.get());

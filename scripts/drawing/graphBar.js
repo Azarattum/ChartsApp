@@ -18,14 +18,13 @@ class BarGraphDrawer extends GraphDrawer {
         for (const id in this.path.uppers) {
             this.gl.attributes["upper" + id] = this.path.uppers[id];
         }
-        console.log(this.path.uppers);
     }
 
     _initializeProgram() {
         const vertex = new Shader(this.shaders[0], Shader.types.VERTEX);
         const fragment = new Shader(this.shaders[1], Shader.types.FRAGMENT);
         vertex.variables = {
-            uppers: this.chartDrawer.chart.graphs.length,
+            count: this.chartDrawer.chart.graphs.length,
             current: this.chartDrawer.graphDrawers.length
         };
         return this.gl.newProgram(new ShadersProgram(vertex, fragment));

@@ -50,7 +50,7 @@ class Graph {
     }
 
     calculateVertices(maxSize, minSize) {
-        this.vertices.forEach((point, index) => {
+        this.vertices.forEach((point) => {
             point.x = (point.x - minSize.x) / maxSize.x * 2 - 1;
             point.y = (point.y - minSize.y) / maxSize.y * 2 - 1;
         });

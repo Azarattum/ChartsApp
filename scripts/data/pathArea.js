@@ -11,46 +11,36 @@ class PathArea extends Path {
         //#endregion
 
         //Fill up the verteces
-        points.forEach(point => {
-            this.vertices.push(point.x, point.y, point.x, -1);
-        });
-
-        //Fill up the sums
         points.forEach((point, index) => {
-            const sum = graphs.reduce((a, b) => {
-                if (b.vertices[index].y > a) {
-                    return b.vertices[index].y;
-                }
-                else {
-                    return a;
-                }
-            }, 0);
-            this.sums.push(sum, 0);
+            this.vertices.push(point.x, point.y, point.x, -1);
         });
 
         //Fill up the bases
         points.forEach((point, index) => {
-            this.bases.push(1, 0, 0, 1);
+            this.bases.push(0, 1);
         });
 
-        //Fill up upper points
+        //Fill up upper points and sums
         const thisIndex = graphs.indexOf(graphs.find(x => x.vertices == points));
         points.forEach((point, index) => {
             for (const graph in graphs) {
                 if (!this.uppers[graph]) {
                     this.uppers[graph] = [];
                 }
+                if (!this.sums[graph]) {
+                    this.sums[graph] = [];
+                }
 
                 if (graph < thisIndex) {
                     this.uppers[graph].push(graphs[graph].vertices[index].y + 1);
                     this.uppers[graph].push(graphs[graph].vertices[index].y + 1);
-                    this.uppers[graph].push(graphs[graph].vertices[index].y + 1);
-                    this.uppers[graph].push(graphs[graph].vertices[index].y + 1);
+                    this.sums[graph].push(0);
+                    this.sums[graph].push(0);
                 } else {
                     this.uppers[graph].push(0);
                     this.uppers[graph].push(0);
-                    this.uppers[graph].push(0);
-                    this.uppers[graph].push(0);
+                    this.sums[graph].push(graphs[graph].vertices[index].y + 1);
+                    this.sums[graph].push(graphs[graph].vertices[index].y + 1);
                 }
             }
         });

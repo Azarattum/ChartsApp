@@ -40,6 +40,7 @@ class Chart {
 
         //#region Create graphs
         this.stacked = !!source.stacked;
+        this.percentage = !!source.percentage;
         const shift = typeof source.columns[0][0] == "string";
         this.xAxis = source.columns[0];
         if (shift) this.xAxis.shift();
@@ -54,7 +55,7 @@ class Chart {
             const name = source.names[id];
             const type = source.types[id];
 
-            const graph = new Graph(this.xAxis, yAxis, color, name, type);
+            const graph = new Graph(this.xAxis, yAxis, color, name, type, this.percentage);
             if (graph.size.x > this.size.x) {
                 this.size.x = graph.size.x;
             }
@@ -68,6 +69,9 @@ class Chart {
                 this.offsets.y = graph.minY;
             }
             this.graphs.push(graph);
+        }
+        if (this.percentage) {
+            this.size.y = 100;
         }
 
         this.graphs = this.graphs.sort(function(a, b){return b.maxY-a.maxY});

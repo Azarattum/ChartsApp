@@ -226,8 +226,7 @@ class LayoutDrawer {
     /**
      * Draws the layout.
      */
-    draw() {
-        const projection = this.chartDrawer.animations.projection.get();
+    draw(projection) {
         const move = projection[7];
         const scaleY = projection[4];
         const scaleX = projection[0];

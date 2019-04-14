@@ -1,10 +1,10 @@
 attribute vec2 position;
 attribute float pointer;
 attribute float base;
-/*/repeat uppers/*/
+/*/repeat count/*/
 attribute float upper/*/i/*/;
 
-uniform float visible[/*/uppers/*/];
+uniform float visible[/*/count/*/];
 uniform mat3 projection;
 
 uniform int selected;
@@ -19,7 +19,7 @@ void main() {
 
 	vec3 tranformed = vec3(position, 1.);
 	float upwards = 0.;
-	/*/repeat uppers/*/
+	/*/repeat count/*/
 	upwards += upper/*/i/*/ * visible[/*/i/*/];
 
 	if (base == 0.) {
