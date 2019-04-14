@@ -64,6 +64,7 @@ class ChartElement {
         this.elements.title.innerHTML = "Chart Title";
 
         //Add buttons
+        this.elements.buttons = [];
         if (this.chartData.graphs.length <= 1) return;
         for (const graphId in this.chartData.graphs) {
             let button = document.createElement("label");
@@ -93,6 +94,7 @@ class ChartElement {
             button.appendChild(cover);
             this.elements.graphs.appendChild(button);
 
+            //Click event
             button.onclick = (e) => {
                 let visibleGraphs = this.drawer.graphDrawers.reduce((n, x) => {
                     return n + (x.visible ? 1 : 0);
@@ -105,8 +107,38 @@ class ChartElement {
                 this.drawer.toggle(+graphId, checkbox.checked);
                 this.previewer.toggle(+graphId, checkbox.checked);
             }
+
+            //Holding events
+            button.onmousedown = () => {
+                this.elements.buttons[+graphId].timeout = setTimeout(() => {toggleAll(this, +graphId)}, 1000);
+            }
+            button.ontouchstart = () => {
+                this.elements.buttons[+graphId].timeout = setTimeout(() => {toggleAll(this, +graphId)}, 1000);
+            }
+
+            button.onmouseup = () => {
+                clearTimeout(this.elements.buttons[+graphId].timeout);
+            }
+            button.ontouchend = () => {
+                clearTimeout(this.elements.buttons[+graphId].timeout);
+            }
+
+            this.elements.buttons.push(button);
         }
 
+        function toggleAll(sender, except) {
+            sender.elements.buttons[except].firstChild.checked = true;
+            sender.drawer.toggle(except, true);
+            sender.previewer.toggle(except, true);
+            for (const id in sender.elements.buttons) {
+                if (id != except) {
+                    sender.elements.buttons[id].firstChild.checked = false;
+                    sender.elements.buttons[id].firstChild.checked = false;
+                    sender.drawer.toggle(id, false);
+                    sender.previewer.toggle(id, false);
+                }
+            }
+        }
     }
 
     set style(styles) {
