@@ -5,6 +5,7 @@ class ChartElement {
         this.shaders = shadersPack;
         this.elements.container = container;
         this._initializeComponent();
+        this._windowWidth = window.innerWidth;
 
         //Default styles
         this.styles.text = "#000";
@@ -282,11 +283,14 @@ class ChartElement {
 
     //#region Public methods
     update() {
-        this.elements.select.style.left = "0px";
-        this.elements.select.style.width = "0px";
+        if (window.innerWidth != this._windowWidth) {
+            this.elements.select.style.left = "0px";
+            this.elements.select.style.width = "0px";
+        }
         this.drawer.update();
         this.previewer.update();
         this.controller.update();
+        this._windowWidth = window.innerWidth;
     }
 
     render() {
