@@ -2,8 +2,8 @@
  * Class for drawing bar graphs.
  */
 class BarGraphDrawer extends GraphDrawer {
-    constructor(chart, graph, gl, shaders) {
-        super(chart, graph, gl, shaders);
+    constructor(chartDrawer, graph, gl, shaders) {
+        super(chartDrawer, graph, gl, shaders);
     }
 
     //#region Private methods

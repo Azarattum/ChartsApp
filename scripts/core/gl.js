@@ -6,8 +6,6 @@ class GL {
      */
     constructor(canvas, program = null) {
         //GL Initializing
-        this.currentStack = 0;
-        this.currentProgram = 0;
         this.canvas = canvas;
         this.gl = canvas.getContext("webgl", {
             alpha: false,
@@ -23,11 +21,17 @@ class GL {
             premultipliedAlpha: false
         });
 
-        this.attributeBuffer = [[]];
-        this.attributes = new Proxy(this.attributeBuffer, {
+        this.currentProgram = 0;
+        this.programsBuffer = [];
+        if (program != null) {
+            this.newProgram(program);
+        }
+
+        this.attributes = new Proxy([], {
             set: (obj, name, value) => {
-                let attribute = this.attributeBuffer[this.currentStack].find(x => x.name == name);
-                let type = this.programsBuffer[this.currentProgram].attributes[name];
+                const program = this.programsBuffer[this.currentProgram];
+                let attribute = program.attributeBuffer[program.currentStack].find(x => x.name == name);
+                let type = program.attributes[name];
                 if (type == undefined) {
                     console.warn(new Error("Attribute " + name + " does not exist in shader program!"));
                     return;
@@ -35,24 +39,25 @@ class GL {
                 if (attribute != undefined) {
                     attribute.update(value);
                 } else {
-                    this.attributeBuffer[this.currentStack].push(
-                        new Attrubute(this.gl, this.programsBuffer[this.currentProgram].program, type, name, value)
+                    program.attributeBuffer[program.currentStack].push(
+                        new Attrubute(this.gl, program.program, type, name, value)
                     );
                 }
                 return true;
             },
             get: (obj, name) => {
-                let attribute = this.attributeBuffer[this.currentStack].find(x => x.name == name);
+                const program = this.programsBuffer[this.currentProgram];
+                let attribute = program.attributeBuffer[program.currentStack].find(x => x.name == name);
                 if (attribute == undefined) return undefined;
                 return attribute.value;
             }
         });
 
-        this.uniformBuffer = [];
-        this.uniforms = new Proxy(this.uniformBuffer, {
+        this.uniforms = new Proxy([], {
             set: (obj, name, value) => {
-                let uniform = this.uniformBuffer.find(x => x.name == name);
-                let type = this.programsBuffer[this.currentProgram].uniforms[name];
+                const program = this.programsBuffer[this.currentProgram];
+                let uniform = program.uniformBuffer.find(x => x.name == name);
+                let type = program.uniforms[name];
                 if (type == undefined) {
                     console.warn(new Error("Uniform " + name + " does not exist in shader program!"));
                     return;
@@ -60,24 +65,19 @@ class GL {
                 if (uniform != undefined) {
                     uniform.update(value);
                 } else {
-                    this.uniformBuffer.push(
-                        new Uniform(this.gl, this.programsBuffer[this.currentProgram].program, type, name, value)
+                    program.uniformBuffer.push(
+                        new Uniform(this.gl, program.program, type, name, value)
                     );
                 }
                 return true;
             },
             get: (obj, name) => {
-                let uniform = this.uniformBuffer.find(x => x.name == name);
+                const program = this.programsBuffer[this.currentProgram];
+                let uniform = program.uniformBuffer.find(x => x.name == name);
                 if (uniform == undefined) return undefined;
                 return uniform.value;
             }
         });
-
-        this.indexBuffer = [];
-        this.programsBuffer = [];
-        if (program != null) {
-            this.newProgram(program);
-        }
 
         this.gl.clearColor(0., 0., 0., 0.);
         this.gl.enable(this.gl.BLEND);
@@ -94,15 +94,16 @@ class GL {
      * Sets current stack.
      */
     set stack(value) {
-        if (value >= 0 && value < this.attributeBuffer.length)
-            this.currentStack = value;
+        const program = this.programsBuffer[this.currentProgram];
+        if (value >= 0 && value < program.attributeBuffer.length)
+            program.currentStack = value;
 
-        for (const attribute of this.attributeBuffer[this.currentStack]) {
+        for (const attribute of program.attributeBuffer[program.currentStack]) {
             attribute.bind();
         }
 
-        if (this.indexBuffer[this.currentStack]) {
-            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer[this.currentStack]);
+        if (program.indexBuffer[program.currentStack]) {
+            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, program.indexBuffer[program.currentStack]);
         }
     }
 
@@ -110,7 +111,8 @@ class GL {
      * Returns current stack id.
      */
     get stack() {
-        return this.currentStack;
+        const program = this.programsBuffer[this.currentProgram];
+        return program.currentStack;
     }
 
     /**
@@ -137,16 +139,7 @@ class GL {
     }
 
     set indices(indices) {
-        if (this.indexBuffer.length <= this.currentStack) {
-            this.indexBuffer[this.currentStack] = this.gl.createBuffer();
-            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer[this.currentStack]);
-        }
-
-        if (!(indices instanceof Uint16Array)) {
-            indices = new Uint16Array(indices);
-        }
-
-        this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, indices, this.gl.STATIC_DRAW);
+        this.programsBuffer[this.currentProgram].indices = indices;
     }
     //#endregion
 
@@ -165,12 +158,13 @@ class GL {
      * Creates a new stack.
      */
     newStack() {
-        if (this.attributeBuffer[this.currentStack].length == 0) {
-            return this.currentStack;
+        const program = this.programsBuffer[this.currentProgram];
+        if (program.attributeBuffer[program.currentStack].length == 0) {
+            return program.currentStack;
         }
-        this.attributeBuffer.push([]);
-        this.currentStack = this.attributeBuffer.length - 1;
-        return this.currentStack;
+        program.attributeBuffer.push([]);
+        program.currentStack = program.attributeBuffer.length - 1;
+        return program.currentStack;
     }
 
     resize(width = this.canvas.clientWidth, height = this.canvas.clientHeight) {
@@ -414,6 +408,23 @@ class ShadersProgram {
         this.fragment = fragment;
         this.gl = null;
         this.program = null;
+        this.uniformBuffer = [];
+        this.attributeBuffer = [[]];
+        this.indexBuffer = [];
+        this.currentStack = 0;
+    }
+
+    set indices(indices) {
+        if (this.indexBuffer.length <= this.currentStack) {
+            this.indexBuffer[this.currentStack] = this.gl.createBuffer();
+            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer[this.currentStack]);
+        }
+
+        if (!(indices instanceof Uint16Array)) {
+            indices = new Uint16Array(indices);
+        }
+
+        this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, indices, this.gl.STATIC_DRAW);
     }
 
     attach(gl) {
