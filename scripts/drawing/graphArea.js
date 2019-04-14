@@ -2,18 +2,17 @@
  * Class for drawing area stacked graphs.
  */
 class AreaGraphDrawer extends GraphDrawer {
-    constructor(chart, graph, gl, shaders) {
-        super(chart, graph, gl, shaders);
-
-        this.thickness = 1;
+    constructor(chartDrawer, graph, gl, shaders) {
+        super(chartDrawer, graph, gl, shaders);
     }
 
     //#region Private methods
     _initializeAttributes() {
-        this.path = new PathArea(this.graph.vertices);
+        this.path = new PathArea(this.graph.vertices, this.chartDrawer.chart.graphs);
         this.stack = this.gl.newStack();
 
         this.gl.attributes.position = this.path.vertices;
+        this.gl.attributes.sum = this.path.sums;
     }
     //#endregion
 

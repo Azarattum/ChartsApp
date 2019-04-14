@@ -94,6 +94,7 @@ class LayoutDrawer {
         let color = this.color.alpha(this.opacity);
 
         //Draw zero axis line
+        this.gl.program = this.program;
         this.gl.stack = this.stack;
         this.gl.uniforms.projection = projection;
         this.gl.uniforms.color = this.color.alpha(this.opacity).toArray();

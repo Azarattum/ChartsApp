@@ -73,7 +73,7 @@ class GraphDrawer {
     _initializeProgram() {
         const vertex = new Shader(this.shaders[0], Shader.types.VERTEX);
         const fragment = new Shader(this.shaders[1], Shader.types.FRAGMENT);
-        this.program = this.gl.newProgram(new ShadersProgram(vertex, fragment));
+        return this.gl.newProgram(new ShadersProgram(vertex, fragment));
     }
 
     _initializeAttributes() {
