@@ -166,6 +166,14 @@ class ChartElement {
             2
         );
     }
+    
+    set title(title) {
+        this.elements.title.innerHTML = title;
+    }
+    
+    get title() {
+        return this.elements.title.innerHTML;
+    }
     //#endregion
 
     //#region Private methods

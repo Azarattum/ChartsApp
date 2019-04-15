@@ -21,6 +21,7 @@ load({
 
     const pageStyle = getComputedStyle(document.getElementsByClassName("page")[0]);
     const chartsContainer = document.getElementById("charts");
+    const titles = ["Followers", "Statistics", "Fruits", "Views", "Fruits 2"];
 
     for (let i = 1; i <= 5; i++) {
         const container = document.createElement("div");
@@ -41,6 +42,7 @@ load({
             font: pageStyle["font-family"],
             lowlight: pageStyle.getPropertyValue("--lowlight")
         };
+        chartElement.title = titles[i - 1];
 
         charts.push(chartElement);
     }
