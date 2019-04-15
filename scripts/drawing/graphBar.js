@@ -38,7 +38,7 @@ class BarGraphDrawer extends GraphDrawer {
     draw(projection) {
         super.draw(projection);
 
-        this.gl.uniforms.selected = -1;
+        this.gl.uniforms.selected = this.chartDrawer.selection.index;
         this.gl.uniforms.visible = this.chartDrawer.graphDrawers.map(x => (x.color.a / 255));
 
         const count = (this.cuts.end - 1) * 6;

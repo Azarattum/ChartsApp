@@ -99,8 +99,6 @@ class SelectionDrawer {
             if (!this.chartDrawer.chart.percentage && points.length > 0) {
                 this._drawCircles(points);
             }
-        } else {
-            //this._drawIndex();
         }
     }
     //#endregion
