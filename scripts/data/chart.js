@@ -76,7 +76,9 @@ class Chart {
             this.offsets.y = 0;
         }
 
-        this.graphs = this.graphs.sort(function(a, b){return b.maxY-a.maxY});
+        this.graphs = this.graphs.sort(function (a, b) {
+            return b.maxY - a.maxY
+        });
 
         this.type = this.graphs[0].type;
 

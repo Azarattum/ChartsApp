@@ -1,5 +1,5 @@
-console.debugging = true;
-var charts = [];
+console.debugging = false; //Use it to enable debugging mode
+var charts = []; //Easy access to drawing charts from the global context
 
 load({
     "data/1/overview.json": "chart1",

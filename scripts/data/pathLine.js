@@ -24,7 +24,7 @@ class PathLine extends Path {
                 array[i].x, array[i].y, array[i].x, array[i].y
             );
         });
-        
+
         //Fill up the nexts points
         points.forEach((point, i, array) => {
             if (i < array.length - 1) i++;

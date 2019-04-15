@@ -4,7 +4,6 @@
 class GraphDrawer {
     /**
      * Creates an object for drawing graphs.
-     * @param {Graph} graph The graph to draw.
      */
     constructor(chartDrawer, graph, gl, shaders) {
         //Abstract exception
@@ -107,8 +106,8 @@ class GraphDrawer {
         this.cuts.end = Math.round(end * this.graph.length);
         //Left additional points off the screen to avoid artifacts
         for (let i = 0; i < 2; i++) {
-            if (this.cuts.end < this.graph.length) this.cuts.end++;       
-            if (this.cuts.start > 0) this.cuts.start--;       
+            if (this.cuts.end < this.graph.length) this.cuts.end++;
+            if (this.cuts.start > 0) this.cuts.start--;
         }
     }
     //#endregion

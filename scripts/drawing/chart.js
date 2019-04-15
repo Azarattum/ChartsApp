@@ -4,7 +4,6 @@
 class ChartDrawer {
     /**
      * Creates an object for drawing charts.
-     * @param {Chart} chart The chart to draw.
      */
     constructor(chart, canvas, shadersPack, layout = null) {
         //#region Fields
