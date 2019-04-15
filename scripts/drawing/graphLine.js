@@ -29,7 +29,7 @@ class LineGraphDrawer extends GraphDrawer {
         super.draw(projection);
 
         this.gl.uniforms.aspect = this.gl.viewport.width / this.gl.viewport.height;
-        this.gl.uniforms.thickness = this.thickness / this.gl.canvas.height;
+        this.gl.uniforms.thickness = this.thickness / this.gl.canvas.height * Math.sqrt(window.devicePixelRatio);
 
         const count = (this.cuts.end - 1) * 6;
         const offset = this.cuts.start * 6;
