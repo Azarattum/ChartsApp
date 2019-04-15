@@ -21,6 +21,8 @@ class LayoutDrawer {
         this.context = canvas.getContext("2d");
         /**GL Object.*/
         this.gl = gl;
+        /**Shaders program for layout.*/
+        this.program = this._initializeProgram();
 
         //Custom properties
 
@@ -41,9 +43,12 @@ class LayoutDrawer {
             dateOffset: new AnimationObject(0)
         };
 
-        //#endregion
+        //Sub drawers
 
-        this.program = this._initializeProgram();
+        /**Selection drawer object.*/
+        this.selectionDrawer = new SelectionDrawer(chartDrawer, this.gl);
+
+        //#endregion
 
         this._initializeAttributes();
 
@@ -53,7 +58,7 @@ class LayoutDrawer {
     //#region Properties
     get animating() {
         return Object.values(this.animations).some(x => x.inProgress) ||
-            this.animations.dateFade.some(x => x.inProgress);
+            this.animations.dateFade.some(x => x.inProgress) || this.selectionDrawer.animating;
     }
     //#endregion
 
@@ -76,7 +81,6 @@ class LayoutDrawer {
         this.gl.attributes.position = lines;
     }
 
-    ///MOVE TO Y AXIS!!!
     /**
      * Draws layout lines.
      */
@@ -249,7 +253,7 @@ class LayoutDrawer {
     /**
      * Draws the layout.
      */
-    draw(projection) {
+    draw(projection, selection) {
         const move = projection[7];
         const scaleY = projection[4];
         const scaleX = projection[0];
@@ -266,6 +270,8 @@ class LayoutDrawer {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         this._drawLines(move, graphValue, graphMin, graphValue2, graphMin2);
+        this.selectionDrawer.draw(projection, selection);
+
         this._drawDates(scaleX, this.chartDrawer.chart, this.chartDrawer.area);
     }
     //#endregion

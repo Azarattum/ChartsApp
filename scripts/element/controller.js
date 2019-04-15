@@ -72,8 +72,9 @@ class ChartController {
      * @param {Bool} visible Whethe selection is visible now or not.
      */
     select(eventArgs, visible) {
-        if (!eventArgs.clientX && eventArgs.touches && eventArgs.touches.length > 0) {
-            eventArgs.clientX = eventArgs.touches[0].clientX;
+        if (!eventArgs.offsetX && eventArgs.touches && eventArgs.touches.length > 0) {
+            eventArgs.offsetX = eventArgs.targetTouches[0].pageX -
+                eventArgs.target.getBoundingClientRect().left;
         }
         eventArgs.preventDefault();
         let percent = eventArgs.offsetX / this.field.clientWidth;

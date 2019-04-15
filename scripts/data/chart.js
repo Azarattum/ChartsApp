@@ -80,6 +80,8 @@ class Chart {
 
         this.type = this.graphs[0].type;
 
+        if (this.type == "bar") this.stacked = true;
+
         //Calculate graph vertices according to the biggest size
         if (!this.scaled) {
             this.graphs.forEach(x => x.calculateVertices(this.size, this.offsets));

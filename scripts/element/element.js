@@ -1,3 +1,5 @@
+const ANIMATION_PERIOD = 200;
+
 class ChartElement {
     constructor(container, shadersPack) {
         this.elements = {};
@@ -61,11 +63,14 @@ class ChartElement {
 
         this.controller.update();
 
-        this.elements.title.innerHTML = "Chart Title";
+        this.elements.title.innerHTML = "";
 
         //Add buttons
         this.elements.buttons = [];
-        if (this.chartData.graphs.length <= 1) return;
+        if (this.chartData.graphs.length <= 1) {
+            this.title = this.chartData.graphs[0].name;
+            return;
+        }
         for (const graphId in this.chartData.graphs) {
             let button = document.createElement("label");
             let checkbox = document.createElement("input");

@@ -1,5 +1,4 @@
 console.debugging = true;
-const ANIMATION_PERIOD = 200;
 var charts = [];
 
 load({

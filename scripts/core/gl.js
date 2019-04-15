@@ -134,8 +134,8 @@ class GL {
 
     set background(color) {
         if (!color) return;
-        color = color.toArray();
-        this.gl.clearColor(color[0], color[1], color[2], color[3]);
+        this.clearColor = color.toArray();
+        this.gl.clearColor(this.clearColor[0], this.clearColor[1], this.clearColor[2], this.clearColor[3]);
     }
 
     set indices(indices) {

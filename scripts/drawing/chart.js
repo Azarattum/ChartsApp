@@ -183,15 +183,6 @@ class ChartDrawer {
 
         //Saving calculated data
         this.area.top = maxY;
-        this.selection.index = selectionIndex;
-        this.selection.value = selectionIndex == -1 ? null :
-            this.graphDrawers[0].graph.vertices[selectionIndex];
-        this.selection.points = [];
-        if (selectionIndex != -1) {
-            for (const drawer of this.graphDrawers) {
-                this.selection.points.push(drawer.graph.points[selectionIndex]);
-            }
-        }
 
         //Calculating the projection
         const zoomX = 1 / (this.area.end - this.area.start);
@@ -203,6 +194,16 @@ class ChartDrawer {
             0, zoomY, 0,
             moveX, moveY, 1
         ];
+
+        this.selection.index = selectionIndex;
+        this.selection.value = selectionIndex == -1 ? null :
+            this.graphDrawers[0].graph.vertices[selectionIndex];
+        this.selection.points = [];
+        if (selectionIndex != -1) {
+            for (const drawer of this.graphDrawers) {
+                this.selection.points.push(drawer.graph.vertices[selectionIndex].y * zoomY + moveY);
+            }
+        }
 
         //Setting up the animations
         this.animations.projection.set(
@@ -249,6 +250,7 @@ class ChartDrawer {
             this.canvas.height = this.canvas.clientHeight * window.devicePixelRatio;
             if (textColor) {
                 this.layoutDrawer.color = textColor;
+                this.layoutDrawer.selectionDrawer.color = textColor;
             }
             if (textFont) {
                 this.layoutDrawer.font = textFont;
@@ -272,7 +274,7 @@ class ChartDrawer {
             }
 
             if (this.layout) {
-                this.layoutDrawer.draw(projection);
+                this.layoutDrawer.draw(projection, this.selection);
                 ///IMPLEMENT NEW SELECTION CLASS!
                 /*if (this.selection.value != null) {
                     this.layoutDrawer.drawSelection(this.selection.value, this.graphDrawers[0].projection.get());
