@@ -78,6 +78,7 @@ load({
     };
 
     document.body.style.backgroundColor = pageStyle["background-color"];
+    document.getElementById("loader").style.opacity = 0;
 });
 
 /**
