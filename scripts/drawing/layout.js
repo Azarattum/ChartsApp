@@ -149,9 +149,10 @@ class LayoutDrawer {
      */
     _drawValues(y, color, graphValue, graphMin, graphValue2, graphMin2) {
         const lineSpace = this.gl.canvas.height / this.lineCount;
+        const margin = 3 * window.devicePixelRatio;
         let textColor = new Color(color);
         textColor.a *= 2;
-        y = y * this.gl.canvas.height / 2 + 3 * window.devicePixelRatio;
+        y = y * this.gl.canvas.height / 2 + margin;
         this.context.fillStyle = textColor.toString();
         this.context.font = lineSpace / 4 + "px " + this.font;
 
@@ -161,28 +162,48 @@ class LayoutDrawer {
             if (textY - lineSpace / 4 < 0) continue;
 
             let label = (this.gl.canvas.height - textY) / this.gl.canvas.height * graphValue + graphMin;
-            label = format(label);
+            label = format(label, this.chartDrawer.chart.percentage);
             if (graphValue2) {
                 let color = new Color(this.chartDrawer.graphDrawers[0].color);
                 color.a *= textColor.a / (this.opacity / 3 * 2);
                 this.context.fillStyle = color.toString();
             }
-            this.context.textAlign = "left"; 
+            this.context.textAlign = "left";
             this.context.fillText(label, 0, textY);
 
             if (graphValue2) {
                 label = (this.gl.canvas.height - textY) / this.gl.canvas.height * graphValue2 + graphMin2;
-                label = format(label);
+                label = format(label, this.chartDrawer.chart.percentage);
                 let color = new Color(this.chartDrawer.graphDrawers[1].color);
                 color.a *= textColor.a / (this.opacity / 3 * 2);
                 this.context.fillStyle = color.toString();
-                this.context.textAlign = "right"; 
+                this.context.textAlign = "right";
                 this.context.fillText(label, this.gl.canvas.width, textY);
             }
         }
 
-        function format(number) {
+        //Draw static labels
+        let label = format(graphMin, this.chartDrawer.chart.percentage);
+        if (graphValue2) {
+            let color = new Color(this.chartDrawer.graphDrawers[0].color);
+            color.a *= textColor.a / (this.opacity / 3 * 2);
+            this.context.fillStyle = color.toString();
+        }
+        this.context.textAlign = "left";
+        this.context.fillText(label, 0, this.gl.canvas.height - margin);
+
+        if (graphValue2) {
+            label = format(graphMin2, this.chartDrawer.chart.percentage);
+            let color = new Color(this.chartDrawer.graphDrawers[1].color);
+            color.a *= textColor.a / (this.opacity / 3 * 2);
+            this.context.fillStyle = color.toString();
+            this.context.textAlign = "right";
+            this.context.fillText(label, this.gl.canvas.width, this.gl.canvas.height - margin);
+        }
+
+        function format(number, isPercentage = false) {
             //Format value
+            const percentage = isPercentage ? "%" : "";
             const absolute = Math.abs(number);
             if (absolute > 1000000000) {
                 return parseFloat((number / 1000000000).toFixed(2)) + "B";
@@ -191,7 +212,7 @@ class LayoutDrawer {
             } else if (absolute > 1000) {
                 return parseFloat((number / 1000).toFixed(1)) + "K";
             } else {
-                return Math.round(number);
+                return Math.round(number) + percentage;
             }
         }
     }
@@ -260,11 +281,14 @@ class LayoutDrawer {
         if (!this.chartDrawer.chart.scaled) {
             var graphValue = this.chartDrawer.chart.size.y / scaleY;
             var graphMin = this.chartDrawer.chart.offsets.y;
+            if (this.chartDrawer.chart.stacked) {
+                graphMin = 0;
+            }
         } else {
-            var graphValue = this.chartDrawer.graphDrawers[0].graph.size.y / scaleY;
-            var graphValue2 = this.chartDrawer.graphDrawers[1].graph.size.y / scaleY;
-            var graphMin = this.chartDrawer.graphDrawers[0].graph.minY;
-            var graphMin2 = this.chartDrawer.graphDrawers[1].graph.minY;
+            var graphValue = this.chartDrawer.chart.graphs[0].size.y / scaleY;
+            var graphValue2 = this.chartDrawer.chart.graphs[1].size.y / scaleY;
+            var graphMin = this.chartDrawer.chart.graphs[0].minY;
+            var graphMin2 = this.chartDrawer.chart.graphs[1].minY;
         }
 
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
