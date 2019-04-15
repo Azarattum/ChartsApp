@@ -46,6 +46,9 @@ class ChartElement {
             this.elements.layout
         );
 
+        const monthNames = ["January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ];
         this.controller.onupdate = (start, end) => {
             this.elements.coverLeft.style.width = start * 100 + "%";
             this.elements.coverRight.style.width = (1 - end) * 100 + "%";
@@ -54,15 +57,21 @@ class ChartElement {
 
             const maxX = this.drawer.chart.size.x;
             const minX = this.drawer.chart.xAxis[0];
-            let startDate = new Date(Math.round(start * maxX + minX));
-            let endDate = new Date(Math.round(end * maxX + minX));
-            this.elements.range.innerHTML = 
+            const startDate = new Date(Math.round(start * maxX + minX));
+            const endDate = new Date(Math.round(end * maxX + minX));
+            const text = document.createTextNode(
                 startDate.getDate() + " " +
-                startDate.toLocaleString(undefined, {month: "long"}) + " " +
+                monthNames[startDate.getMonth()] + " " +
                 startDate.getFullYear() + " - " +
                 endDate.getDate() + " " +
-                endDate.toLocaleString(undefined, {month: "long"}) + " " +
-                endDate.getFullYear();
+                monthNames[endDate.getMonth()] + " " +
+                endDate.getFullYear()
+            );
+
+            const child = this.elements.range.firstChild;
+            if (child)
+                this.elements.range.removeChild(child);
+            this.elements.range.appendChild(text);
         };
 
         this.controller.onselect = (x, value, visible) => {
