@@ -51,6 +51,18 @@ class ChartElement {
             this.elements.coverRight.style.width = (1 - end) * 100 + "%";
             this.drawer.start = start;
             this.drawer.end = end;
+
+            const maxX = this.drawer.chart.size.x;
+            const minX = this.drawer.chart.xAxis[0];
+            let startDate = new Date(Math.round(start * maxX + minX));
+            let endDate = new Date(Math.round(end * maxX + minX));
+            this.elements.range.innerHTML = 
+                startDate.getDate() + " " +
+                startDate.toLocaleString(undefined, {month: "long"}) + " " +
+                startDate.getFullYear() + " - " +
+                endDate.getDate() + " " +
+                endDate.toLocaleString(undefined, {month: "long"}) + " " +
+                endDate.getFullYear();
         };
 
         this.controller.onselect = (x, value, visible) => {
@@ -262,10 +274,17 @@ class ChartElement {
 
     //#region Private methods
     _initializeComponent() {
-        //Title
+        //Heade
+        this.elements.header = document.createElement("div");
         this.elements.title = document.createElement("span");
+        this.elements.range = document.createElement("span");
 
+        this.elements.header.className = "chart-header";
         this.elements.title.className = "chart-title";
+        this.elements.range.className = "chart-range";
+
+        this.elements.header.appendChild(this.elements.title);
+        this.elements.header.appendChild(this.elements.range);
 
         //Tooltip
         this.elements.tooltip = document.createElement("div");
@@ -323,7 +342,7 @@ class ChartElement {
         //Main container
         this.elements.container.className += " chart-container";
 
-        this.elements.container.appendChild(this.elements.title);
+        this.elements.container.appendChild(this.elements.header);
         this.elements.container.appendChild(this.elements.tooltip);
         this.elements.container.appendChild(this.elements.render);
         this.elements.container.appendChild(this.elements.control);
@@ -333,16 +352,23 @@ class ChartElement {
     _initializeStyle() {
         this.elements.container.style.font = this.styles.font;
 
-        this.elements.title.style.display = "block";
+        this.elements.header.style.position = "relative";
+
         this.elements.title.style.fontWeight = "bold";
         this.elements.title.style.color = this.styles.text;
         this.elements.title.style.marginLeft = parseInt(this.styles.margin) / 2 + "px";
         this.elements.title.style.marginBottom = parseInt(this.styles.margin) + "px";
 
+        this.elements.range.style.float = "right";
+        this.elements.range.style.marginBottom = parseInt(this.styles.margin) + "px";
+        this.elements.range.style.fontSize = "0.9em";
+        this.elements.range.style.color = this.styles.text;
+        this.elements.range.style.zIndex = "100";
+
         this.elements.tooltip.style.position = "absolute";
-        this.elements.tooltip.style.minWidth = "9.5em";
+        this.elements.tooltip.style.minWidth = "135.85px";
         this.elements.tooltip.style.padding = parseInt(this.styles.margin) + "px";
-        this.elements.tooltip.style.fontSize = "0.65em";
+        this.elements.tooltip.style.fontSize = "14.3px";
         this.elements.tooltip.style.borderRadius = parseInt(this.styles.margin) / 2 + "px";
         this.elements.tooltip.style.boxShadow = "0px 0px 4px rgba(0, 0, 0, 0.4)";
         this.elements.tooltip.style.backgroundColor = this.styles.background;
