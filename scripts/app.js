@@ -79,6 +79,9 @@ load({
 
     document.body.style.backgroundColor = pageStyle["background-color"];
     document.getElementById("loader").style.opacity = 0;
+    setTimeout(() => {
+        document.getElementById("loader").remove();
+    }, 1500);
 });
 
 /**
