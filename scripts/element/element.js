@@ -21,7 +21,7 @@ class ChartElement {
         this.styles.select = "48px";
         this._initializeStyle();
     }
-    
+
     //#region Properties
     set chart(chart) {
         this.chartData = new Chart(chart);
@@ -32,7 +32,7 @@ class ChartElement {
             this.shaders,
             this.elements.layout,
         );
-        
+
         this.previewer = new ChartDrawer(
             this.chartData,
             this.elements.preview,
@@ -55,15 +55,90 @@ class ChartElement {
 
         this.controller.onselect = (x, value, visible) => {
             if (visible) {
+                this.elements.tooltip.style.opacity = 1;
                 this.drawer.select = value;
             } else {
+                this.elements.tooltip.style.opacity = 0;
                 this.drawer.select = null;
+            }
+
+            if (value < 0.5) {
+                this.elements.tooltip.style.left =
+                    x + parseInt(this.styles.margin) * 2 + "px";
+            } else {
+                this.elements.tooltip.style.left =
+                    (x - this.elements.tooltip.clientWidth - parseInt(this.styles.margin) * 2) + "px";
+            }
+        }
+
+        this.drawer.onrecalculated = () => {
+            if (this.drawer.selection.value == null) return;
+
+            //Update the date
+            const index = this.drawer.selection.index;
+            let date = new Date(
+                this.drawer.chart.xAxis[index]
+            ).toString().split(" ");
+            date = date[0] + ", " + date[2] + " " + date[1] + " " + date[3];
+
+            this.elements.date.innerHTML = date;
+
+            //Update values
+            let values = this.elements.values.children;
+            for (let i = 0; i < values.length; i++) {
+
+                if (this.chartData.percentage) {
+                    let sum = this.drawer.graphDrawers.reduce((a, b) => {
+                        if (!b.visible) return a;
+                        return a + b.graph.points[index].y;
+                    }, 0);
+
+                    values[i].children[0].innerHTML = Math.round(
+                        this.drawer.chart.graphs[i].points[index].y / sum * 100
+                    ) + "%";
+                }
+
+                values[i].style.display = this.drawer.graphDrawers[i].visible ? "list-item" : "none";
+                values[i].children[values[i].children.length - 1].innerHTML =
+                    this.drawer.chart.graphs[i].points[index]
+                    .y.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
             }
         }
 
         this.controller.update();
 
         this.elements.title.innerHTML = "";
+
+        //Add tooltips
+        for (const graphId in this.chartData.graphs) {
+            let container = document.createElement("div");
+            let percentage = document.createElement("div");
+            let name = document.createElement("div");
+            let value = document.createElement("div");
+
+            percentage.className = "chart-tooltip-values-percentage";
+            container.className = "chart-tooltip-values-value";
+            name.className = "chart-tooltip-values-value-value";
+            value.className = "chart-tooltip-values-value-name";
+
+            value.style.color = this.chartData.graphs[+graphId].color.toString();
+            name.innerHTML = this.chartData.graphs[+graphId].name;
+
+            container.style.fontSize = "0.85em";
+            container.float = "left";
+            percentage.style.float = "left";
+            percentage.style.width = "2.4em";
+            name.style.float = "left";
+            name.style.fontWeight = "normal";
+            value.style.float = "right";
+
+            if (this.chartData.percentage) {
+                container.appendChild(percentage);
+            }
+            container.appendChild(name);
+            container.appendChild(value);
+            this.elements.values.appendChild(container);
+        }
 
         //Add buttons
         this.elements.buttons = [];
@@ -77,7 +152,7 @@ class ChartElement {
             let icon = document.createElement("div");
             let cover = document.createElement("div");
             let name = document.createElement("span");
-            
+
             name.innerHTML = this.chartData.graphs[+graphId].name;
             button.style.backgroundColor = this.chartData.graphs[+graphId].color;
             button.style.borderColor = this.chartData.graphs[+graphId].color;
@@ -92,7 +167,7 @@ class ChartElement {
             checkbox.checked = true;
             checkbox.style.position = "fixed";
             checkbox.style.opacity = "0";
-            
+
             button.appendChild(checkbox);
             button.appendChild(icon);
             button.appendChild(name);
@@ -115,10 +190,14 @@ class ChartElement {
 
             //Holding events
             button.onmousedown = () => {
-                this.elements.buttons[+graphId].timeout = setTimeout(() => {toggleAll(this, +graphId)}, 1000);
+                this.elements.buttons[+graphId].timeout = setTimeout(() => {
+                    toggleAll(this, +graphId)
+                }, 1000);
             }
             button.ontouchstart = () => {
-                this.elements.buttons[+graphId].timeout = setTimeout(() => {toggleAll(this, +graphId)}, 1000);
+                this.elements.buttons[+graphId].timeout = setTimeout(() => {
+                    toggleAll(this, +graphId)
+                }, 1000);
             }
 
             button.onmouseup = () => {
@@ -171,11 +250,11 @@ class ChartElement {
             2
         );
     }
-    
+
     set title(title) {
         this.elements.title.innerHTML = title;
     }
-    
+
     get title() {
         return this.elements.title.innerHTML;
     }
@@ -259,6 +338,24 @@ class ChartElement {
         this.elements.title.style.color = this.styles.text;
         this.elements.title.style.marginLeft = parseInt(this.styles.margin) / 2 + "px";
         this.elements.title.style.marginBottom = parseInt(this.styles.margin) + "px";
+
+        this.elements.tooltip.style.position = "absolute";
+        this.elements.tooltip.style.minWidth = "9.5em";
+        this.elements.tooltip.style.padding = parseInt(this.styles.margin) + "px";
+        this.elements.tooltip.style.fontSize = "0.65em";
+        this.elements.tooltip.style.borderRadius = parseInt(this.styles.margin) / 2 + "px";
+        this.elements.tooltip.style.boxShadow = "0px 0px 4px rgba(0, 0, 0, 0.4)";
+        this.elements.tooltip.style.backgroundColor = this.styles.background;
+        this.elements.tooltip.style.color = this.styles.text;
+        this.elements.tooltip.style.overflow = "hidden";
+        this.elements.tooltip.style.touchAction = "none";
+        this.elements.tooltip.style.pointerEvents = "none";
+        this.elements.tooltip.style.userAelect = "none";
+        this.elements.tooltip.style.zIndex = "100";
+        this.elements.tooltip.style.transition = "0.1s";
+        this.elements.tooltip.style.transitionProperty = "opacity";
+        this.elements.tooltip.style.opacity = "0";
+        this.elements.tooltip.style.fontWeight = "bold";
 
         this.elements.render.style.position = "relative";
         this.elements.render.style.width = "100%";

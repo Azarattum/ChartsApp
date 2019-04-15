@@ -160,7 +160,7 @@ class LayoutDrawer {
             if (textY > this.gl.canvas.height) continue;
             if (textY - lineSpace / 4 < 0) continue;
 
-            let label = (this.gl.canvas.height - textY) / this.gl.canvas.height * graphValue;// + graphMin;
+            let label = (this.gl.canvas.height - textY) / this.gl.canvas.height * graphValue + graphMin;
             label = format(label);
             if (graphValue2) {
                 let color = new Color(this.chartDrawer.graphDrawers[0].color);

@@ -27,68 +27,6 @@ body,
     background-color: rgb(var(--color-background));
 }
 
-#tooltip {
-    position: absolute;
-    width: max-content;
-    max-width: 60vw;
-    height: max-content;
-
-    padding: calc(var(--main-margin) / 2);
-
-    font-size: 0.8em;
-    border-radius: calc(var(--main-margin) / 2);
-    box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.4);
-    background-color: rgb(var(--color-background));
-    color: rgb(var(--color-text));
-    overflow: hidden;
-
-    touch-action: none;
-    -ms-touch-select: none;
-    user-select: none;
-
-    opacity: 0;
-    pointer-events: none;
-    z-index: 300;
-    transition: 0.1s;
-    transition-property: opacity;
-}
-
-#tooltip::before {
-    position: absolute;
-    left: calc(var(--main-margin) / -2);
-    top: calc(var(--main-margin) / -2);
-    content: "";
-    width: calc(100% + var(--main-margin) / 2);
-    height: calc(100% + var(--main-margin) / 2);
-
-    background-color: rgba(255, 255, 255, 0.02);
-    z-index: -1;
-}
-
-#tooltip>#values {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-around;
-}
-
-#tooltip>#values>.graph-value {
-    flex-grow: 1;
-    margin-right: calc(var(--main-margin) / 2);
-}
-
-#tooltip>#values .value {
-    margin-top: 0.5em;
-
-    font-size: 1.25em;
-    font-weight: bold;
-    line-height: 80%;
-}
-
-#tooltip>#values .name {
-    font-size: 0.8em;
-    font-weight: bold;
-}
-
 .space {
     display: block;
     position: relative;

@@ -79,7 +79,7 @@ class ChartController {
         eventArgs.preventDefault();
         let percent = eventArgs.offsetX / this.field.clientWidth;
 
-        this.onselect(eventArgs.clientX, percent, visible);
+        this.onselect(eventArgs.offsetX, percent, visible);
     }
 
     /**

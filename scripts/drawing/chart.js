@@ -37,6 +37,8 @@ class ChartDrawer {
         this.redraw = true;
         /**Whether draw layout or not.*/
         this.layout = !!layout;
+        /**Calls every time when the drawe was recalculated.*/
+        this.onrecalculated = () => {};
 
         //Animations
 
@@ -210,6 +212,9 @@ class ChartDrawer {
             projection,
             this.animations.projection.modified ? ANIMATION_PERIOD / 2 : 0
         );
+
+        //Call event
+        this.onrecalculated();
     }
     //#endregion
 
