@@ -1,5 +1,5 @@
 ﻿# Charts Application
-Javascript web application developed by [Azarattum](https://github.com/Azarattum) for Telegram's "Chart Coding Competition". It supports line charts with 1 or 2 Y axes, bar charts and percentage stacked area charts. This is a webgl version for "Stage 2". The original one can be found [here](https://github.com/Azarattum/ChartsApp).
+Javascript web application developed by [Azarattum](https://github.com/Azarattum) for Telegram's "Chart Coding Competition". It supports line charts with 1 or 2 Y axes, bar charts and percentage stacked area charts. This is a webgl version for "Stage 2". The original one can be found [here](https://github.com/Azarattum/ChartsApp/tree/master).
 
 ## Features:
   - Incredible performance thanks to webgl
