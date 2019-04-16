@@ -35,6 +35,7 @@ class Graph {
             this.points.push(new Point(x, y));
             this.vertices.push(new Point(x, y));
         }
+        if (type == "bar") this.minY = 0;
         /**Graph size.*/
         this.size = new Point(this.maxX - this.minX, this.maxY - this.minY);
 
