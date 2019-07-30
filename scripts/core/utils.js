@@ -64,7 +64,7 @@ export class Color {
         } catch {}
 
         try {
-            colors = param1.match(/^rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(,\s*(\d+)\s*)?\);?$/i);
+            colors = param1.match(/^\s*rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(,\s*(\d+)\s*)?\);?$/i);
             if (colors) {
                 this.r = colors[1];
                 this.g = colors[2];

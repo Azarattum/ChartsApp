@@ -124,8 +124,11 @@ export default class ChartDrawer {
      * Calculates chart values for drawing.
      */
     _calculate() {
+        const amplitude = (this.chart.type != "bar") ? 0 :
+            (this.graphDrawers[0].path.points[1].x - this.graphDrawers[0].path.points[0].x) / 2;
         //Estimate index
         let index = Math.round(this.area.start * this.chart.xAxis.length);
+        if (!Number.isInteger(index)) return;
         let previousDistance = Number.MAX_SAFE_INTEGER;
         let goal = this.area.start * 2 - 1;
         //Search for start index
@@ -161,10 +164,8 @@ export default class ChartDrawer {
 
             //Calculate selection
             if (this.layout && this.selection.input != null) {
-                let distance = Math.abs(this.selection.input - vertex.x);
-                if (this.chart.type == "bar") {
-                    distance = Math.round(distance * 92);
-                }
+                let distance = Math.abs(this.selection.input - vertex.x - amplitude);
+                
                 if (distance < minSelectionDistance) {
                     minSelectionDistance = distance;
                     selectionIndex = index;

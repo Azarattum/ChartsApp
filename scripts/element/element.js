@@ -297,8 +297,12 @@ export default class ChartElement {
     }
 
     set style(styles) {
-        this.styles.background = new Color(styles.background).toString() || this.styles.background;
-        this.styles.text = new Color(styles.text).toString() || this.styles.text;
+        if (styles.background) {
+            this.styles.background = new Color(styles.background).toString() || this.styles.background;
+        }
+        if (styles.text) {
+            this.styles.text = new Color(styles.text).toString() || this.styles.text;
+        }
         this.styles.font = styles.font || this.styles.font;
         this.styles.margin = styles.margin || this.styles.margin;
         this.styles.dates = styles.dates || this.styles.dates;
@@ -308,18 +312,22 @@ export default class ChartElement {
         this.styles.select = styles.select || this.styles.select;
         this._initializeStyle();
 
-        this.drawer.update(
-            new Color(styles.background),
-            new Color(styles.text),
-            styles.font,
-            5
-        );
-        this.previewer.update(
-            new Color(styles.background),
-            new Color(styles.text),
-            styles.font,
-            2
-        );
+        if (this.drawer) {
+            this.drawer.update(
+                new Color(styles.background),
+                new Color(styles.text),
+                styles.font,
+                5
+            );
+        }
+        if (this.previewer) {
+            this.previewer.update(
+                new Color(styles.background),
+                new Color(styles.text),
+                styles.font,
+                2
+            );
+        }
     }
 
     set title(title) {
