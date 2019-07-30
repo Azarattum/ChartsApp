@@ -1,7 +1,9 @@
+import Path from "../data/path.js";
+
 /**
  * This class exteds Path class to path areas.
  */
-class PathArea extends Path {
+export default class PathArea extends Path {
     constructor(points, graphs) {
         super(points);
         //#region Properties

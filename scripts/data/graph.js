@@ -1,7 +1,9 @@
+import {Point} from "../core/utils.js";
+
 /**
  * This class represents a graph.
  */
-class Graph {
+export default class Graph {
     /**
      * Creates a graph object.
      * @param {Object} source Source object to create a graph.

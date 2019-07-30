@@ -1,7 +1,10 @@
+import {Color, AnimationObject} from "../core/utils.js";
+import {ANIMATION_PERIOD} from "../element/element.js";
+
 /**
  * Class for drawing the selection line and circles.
  */
-class SelectionDrawer {
+export default class SelectionDrawer {
     constructor(chartDrawer, gl) {
         //#region Fields
 

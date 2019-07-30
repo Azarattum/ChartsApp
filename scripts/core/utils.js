@@ -1,4 +1,4 @@
-class Color {
+export class Color {
     constructor(param1, param2, param3, param4) {
         this.color = {
             r: 0,
@@ -181,7 +181,7 @@ class Color {
     }
 }
 
-class Point {
+export class Point {
     constructor(x = 0, y = 0) {
         this.position = {
             x: x,
@@ -243,7 +243,7 @@ class Point {
     }
 }
 
-class AnimationObject {
+export class AnimationObject {
     /**
      * Creates an object for animating properties.
      * @param {Number} startProperty Property value at the start of the animation.

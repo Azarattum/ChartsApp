@@ -1,7 +1,12 @@
+import {Color, AnimationObject} from "../core/utils.js";
+import {ANIMATION_PERIOD} from "../element/element.js";
+import {Shader, ShadersProgram} from "../core/gl.js";
+import SelectionDrawer from "../drawing/selection.js";
+
 /**
  * Class for drawing chart layouts such as axises.
  */
-class LayoutDrawer {
+export default class LayoutDrawer {
     /**
      * Creates an object for drawing a layout.
      * @param {Element} canvas The canvas for drawing layout.

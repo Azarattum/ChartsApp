@@ -1,4 +1,4 @@
-class ChartController {
+export default class ChartController {
     /**
      * Creates an interactive chart controller.
      * @param {Element} selector Chart area selector element.

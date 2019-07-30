@@ -1,7 +1,10 @@
+import GraphDrawer from "../drawing/graph.js";
+import PathLine from "../data/pathLine.js";
+
 /**
  * Class for drawing line graphs.
  */
-class LineGraphDrawer extends GraphDrawer {
+export default class LineGraphDrawer extends GraphDrawer {
     constructor(chartDrawer, graph, gl, shaders) {
         super(chartDrawer, graph, gl, shaders);
 

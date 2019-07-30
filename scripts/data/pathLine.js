@@ -1,7 +1,9 @@
+import Path from "../data/path.js";
+
 /**
  * This class exteds Path class to path lines.
  */
-class PathLine extends Path {
+export default class PathLine extends Path {
     constructor(points) {
         super(points);
         //#region Properties

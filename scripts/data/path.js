@@ -1,7 +1,7 @@
 /**
  * This class is used to create path points for drawing from graphs.
  */
-class Path {
+export default class Path {
     constructor(points) {
         this.points = points;
         this.indices = new Uint16Array(points.length * 6);

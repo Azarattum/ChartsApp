@@ -1,7 +1,11 @@
+import GraphDrawer from "../drawing/graph.js";
+import PathBar from "../data/pathBar.js";
+import {Shader, ShadersProgram} from "../core/gl.js";
+
 /**
  * Class for drawing bar graphs.
  */
-class BarGraphDrawer extends GraphDrawer {
+export default class BarGraphDrawer extends GraphDrawer {
     constructor(chartDrawer, graph, gl, shaders) {
         super(chartDrawer, graph, gl, shaders);
     }

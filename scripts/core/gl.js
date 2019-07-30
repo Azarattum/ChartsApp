@@ -1,4 +1,4 @@
-class GL {
+export default class GL {
     /**
      * Creates GL object.
      * @param {Element} canvas Canvas element.
@@ -353,7 +353,7 @@ class Uniform {
     }
 }
 
-class Shader {
+export class Shader {
     constructor(code, type) {
         this.code = code;
         this.type = type;
@@ -443,7 +443,7 @@ class Shader {
     }
 }
 
-class ShadersProgram {
+export class ShadersProgram {
     constructor(vertex, fragment) {
         this.attributes = [];
         this.uniforms = [];

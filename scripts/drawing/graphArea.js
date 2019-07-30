@@ -1,7 +1,11 @@
+import GraphDrawer from "../drawing/graph.js";
+import PathArea from "../data/pathArea.js";
+import {Shader, ShadersProgram} from "../core/gl.js";
+
 /**
  * Class for drawing area stacked graphs.
  */
-class AreaGraphDrawer extends GraphDrawer {
+export default class AreaGraphDrawer extends GraphDrawer {
     constructor(chartDrawer, graph, gl, shaders) {
         super(chartDrawer, graph, gl, shaders);
     }

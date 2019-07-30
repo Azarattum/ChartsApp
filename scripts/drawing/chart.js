@@ -1,7 +1,15 @@
+import {AnimationObject} from "../core/utils.js";
+import {ANIMATION_PERIOD} from "../element/element.js";
+import GL from "../core/gl.js";
+import LayoutDrawer from "../drawing/layout.js";
+import LineGraphDrawer from "../drawing/graphLine.js";
+import BarGraphDrawer from "../drawing/graphBar.js";
+import AreaGraphDrawer from "../drawing/graphArea.js";
+
 /**
  * This class is responsible for drawing the entire chart.
  */
-class ChartDrawer {
+export default class ChartDrawer {
     /**
      * Creates an object for drawing charts.
      */

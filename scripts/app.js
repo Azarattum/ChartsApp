@@ -1,5 +1,6 @@
 console.debugging = false; //Use it to enable debugging mode
 var charts = []; //Easy access to drawing charts from the global context
+import ChartElement from "./element/element.js";
 
 load({
     "data/1/overview.json": "chart1",
@@ -33,7 +34,7 @@ load({
             layout: [data["vshaderLayout"], data["fshaderLayout"]],
         };
 
-        chartElement = new ChartElement(container, shaders);
+        let chartElement = new ChartElement(container, shaders);
         chartElement.chart = data["chart" + i];
         chartElement.style = {
             background: pageStyle.getPropertyValue("--color-background"),

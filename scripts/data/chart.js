@@ -1,7 +1,10 @@
+import {Point, Color} from "../core/utils.js";
+import Graph from "../data/graph.js";
+
 /**
  * This class represents a chart.
  */
-class Chart {
+export default class Chart {
     /**
      * Creates a chart object.
      * @param {Object} source Source JSON string, object or filename to create a chart.

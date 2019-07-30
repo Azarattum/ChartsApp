@@ -1,7 +1,9 @@
+import Path from "../data/path.js";
+
 /**
  * This class exteds Path class to path bars.
  */
-class PathBar extends Path {
+export default class PathBar extends Path {
     constructor(points, graphs) {
         super(points);
         //#region Properties

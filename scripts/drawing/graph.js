@@ -1,7 +1,11 @@
+import {Color, AnimationObject} from "../core/utils.js";
+import {ANIMATION_PERIOD} from "../element/element.js";
+import {Shader, ShadersProgram} from "../core/gl.js";
+
 /**
  * Abstract class from all graph drawers.
  */
-class GraphDrawer {
+export default class GraphDrawer {
     /**
      * Creates an object for drawing graphs.
      */

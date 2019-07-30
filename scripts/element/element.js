@@ -1,6 +1,11 @@
-const ANIMATION_PERIOD = 200;
+import {Color} from "../core/utils.js";
+import Chart from "../data/chart.js";
+import ChartDrawer from "../drawing/chart.js";
+import ChartController from "../element/controller.js";
 
-class ChartElement {
+export const ANIMATION_PERIOD = 200;
+
+export default class ChartElement {
     constructor(container, shadersPack) {
         this.elements = {};
         this.styles = {};
