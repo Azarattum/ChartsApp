@@ -29,7 +29,11 @@ export default class ChartElement {
 
     //#region Properties
     set chart(chart) {
-        this.chartData = new Chart(chart);
+        if (chart instanceof Chart) {
+            this.chartData = chart;
+        } else {
+            this.chartData = new Chart(chart);
+        }
 
         this.drawer = new ChartDrawer(
             this.chartData,
