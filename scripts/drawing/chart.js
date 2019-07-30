@@ -161,7 +161,10 @@ export default class ChartDrawer {
 
             //Calculate selection
             if (this.layout && this.selection.input != null) {
-                const distance = Math.abs(this.selection.input - vertex.x);
+                let distance = Math.abs(this.selection.input - vertex.x);
+                if (this.chart.type == "bar") {
+                    distance = Math.round(distance * 92);
+                }
                 if (distance < minSelectionDistance) {
                     minSelectionDistance = distance;
                     selectionIndex = index;

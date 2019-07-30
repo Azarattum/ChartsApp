@@ -112,6 +112,18 @@ export default class ChartElement {
             //Update values
             let values = this.elements.values.children;
             for (let i = 0; i < values.length; i++) {
+                if (this.chartData.stacked && i == values.length - 1) {
+                    let sum = this.drawer.graphDrawers.reduce((a, b) => {
+                        if (!b.visible) return a;
+                        return a + b.graph.points[index].y;
+                    }, 0);
+
+                    values[i].style.display = 
+                        this.drawer.graphDrawers.filter(x => x.visible).length <= 1 ?
+                        "none" : "list-item";
+                    values[i].children[values[i].children.length - 1].innerHTML = sum;
+                    continue;
+                }
 
                 if (this.chartData.percentage) {
                     let sum = this.drawer.graphDrawers.reduce((a, b) => {
@@ -156,6 +168,35 @@ export default class ChartElement {
             percentage.style.width = "2.4em";
             name.style.float = "left";
             name.style.fontWeight = "normal";
+            value.style.float = "right";
+
+            if (this.chartData.percentage) {
+                container.appendChild(percentage);
+            }
+            container.appendChild(name);
+            container.appendChild(value);
+            this.elements.values.appendChild(container);
+        }
+        if (this.chartData.stacked) {
+            let container = document.createElement("div");
+            let percentage = document.createElement("div");
+            let name = document.createElement("div");
+            let value = document.createElement("div");
+
+            percentage.className = "chart-tooltip-values-percentage";
+            container.className = "chart-tooltip-values-value";
+            name.className = "chart-tooltip-values-value-value";
+            value.className = "chart-tooltip-values-value-name";
+
+            value.style.color = "inherit";
+            name.innerHTML = "Total";
+
+            container.style.fontSize = "0.85em";
+            container.float = "left";
+            percentage.style.float = "left";
+            percentage.style.width = "2.4em";
+            name.style.float = "left";
+            name.style.fontWeight = "bold";
             value.style.float = "right";
 
             if (this.chartData.percentage) {
